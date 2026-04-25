@@ -57,8 +57,8 @@ Thumbs.db
 desktop.ini
 
 # Project specific
-scratch/
 .cache/
 .parcel-cache/
 .next/
 .nuxt/
+

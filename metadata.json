@@ -1,0 +1,6 @@
+{
+  "name": "FretMaster",
+  "description": "A modern, interactive non-AI web application for guitarists to explore chords, write progressions, and hear them using a built-in guitar synth. Features Songsterr and Chordify-style views with 200+ generated guitar chords.",
+  "requestFramePermissions": [],
+  "majorCapabilities": []
+}

@@ -1,0 +1,70 @@
+{
+  "name": "fretmaster",
+  "private": true,
+  "version": "1.0.0",
+  "description": "A premium guitar fretboard and scale explorer.",
+  "author": "FretMaster Team",
+  "main": "electron/main.cjs",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --port=3000 --strictPort --host=0.0.0.0",
+    "electron:dev": "concurrently \"npm run dev\" \"wait-on http://localhost:3000 && electron .\"",
+    "kill-port": "powershell -Command \"Stop-Process -Id (Get-NetTCPConnection -LocalPort 3000).OwningProcess -Force\"",
+    "build": "vite build",
+    "electron:build": "npm run build && electron-builder",
+    "preview": "vite preview",
+    "clean": "rm -rf dist dist-electron",
+    "lint": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@google/genai": "^1.29.0",
+    "@tailwindcss/vite": "^4.1.14",
+    "@vitejs/plugin-react": "^5.0.4",
+    "clsx": "^2.1.1",
+    "dotenv": "^17.2.3",
+    "express": "^4.21.2",
+    "lucide-react": "^0.546.0",
+    "motion": "^12.23.24",
+    "react": "^19.0.0",
+    "react-colorful": "^5.6.1",
+    "react-dom": "^19.0.0",
+    "soundfont-player": "^0.12.0",
+    "tailwind-merge": "^3.5.0",
+    "tone": "^15.1.22",
+    "vite": "^6.2.0"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.21",
+    "@types/node": "^22.14.0",
+    "autoprefixer": "^10.4.21",
+    "concurrently": "^9.2.1",
+    "electron": "^41.3.0",
+    "electron-builder": "^26.8.1",
+    "electron-is-dev": "^3.0.1",
+    "tailwindcss": "^4.1.14",
+    "tsx": "^4.21.0",
+    "typescript": "~5.8.2",
+    "vite": "^6.2.0",
+    "wait-on": "^9.0.5"
+  },
+  "build": {
+    "appId": "com.fretmaster.app",
+    "productName": "FretMaster",
+    "directories": {
+      "output": "dist-electron"
+    },
+    "files": [
+      "dist/**/*",
+      "electron/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "public/img/fretmaster.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    }
+  }
+}

@@ -1,6 +1,6 @@
 const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('path');
-const isDev = require('electron-is-dev');
+
 app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required');
 
 function createWindow() {
@@ -19,7 +19,7 @@ function createWindow() {
     backgroundColor: '#09090b', // Matches the zinc theme background
   });
 
-  if (isDev) {
+  if (!app.isPackaged) {
     mainWindow.loadURL('http://localhost:3000');
     // mainWindow.webContents.openDevTools();
   } else {

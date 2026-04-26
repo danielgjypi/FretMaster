@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import * as Tone from 'tone';
 import { CHORD_GROUPS, Chord, getSuggestions } from '../lib/chords';
 import { playChord, setBpm, setSynthInstrument, getCurrentInstrumentName, stopSynth, setVolume } from '../lib/synth';
-import { Play as PlayIcon, Trash2, Music, FastForward, Settings2, Sparkles, Save, X, Check, Search, ChevronDown, Palette, Volume2, Minus, Square } from 'lucide-react';
+import { Undo2, Redo2, Play as PlayIcon, Trash2, Music, FastForward, Settings2, Sparkles, Save, X, Check, Search, ChevronDown, Palette, Volume2, Minus, Square } from 'lucide-react';
 import { useTheme, Theme } from './ThemeProvider';
 import { InteractiveChord } from './InteractiveChord';
 import { SaveModal } from './SaveModal';
@@ -15,6 +15,22 @@ import { AnimatedScrollInput } from './AnimatedScrollInput';
 import { ScaleMaster } from './ScaleMaster';
 import { cn } from '../lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
+import {
+  DndContext, 
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  horizontalListSortingStrategy
+} from '@dnd-kit/sortable';
+import { SortableChord } from './SortableChord';
 
 export function MainApp() {
   const { theme, setTheme } = useTheme();
@@ -42,11 +58,17 @@ export function MainApp() {
   const [instrument, setInstrument] = useState<string>(() => {
     return localStorage.getItem('fretmaster-instrument') || 'acoustic_guitar_nylon';
   });
+  const [trackName, setTrackName] = useState(() => {
+    return localStorage.getItem('fretmaster-track-name') || '';
+  });
+  const [past, setPast] = useState<Chord[][]>([]);
+  const [future, setFuture] = useState<Chord[][]>([]);
 
   useEffect(() => { localStorage.setItem('fretmaster-progression', JSON.stringify(progression)); }, [progression]);
   useEffect(() => { localStorage.setItem('fretmaster-bpm', bpm.toString()); }, [bpm]);
   useEffect(() => { localStorage.setItem('fretmaster-volume', volume.toString()); }, [volume]);
   useEffect(() => { localStorage.setItem('fretmaster-instrument', instrument); }, [instrument]);
+  useEffect(() => { localStorage.setItem('fretmaster-track-name', trackName); }, [trackName]);
 
   const [autoPlayEnabled, setAutoPlayEnabled] = useState(true);
   const [showNoteNames, setShowNoteNames] = useState(true);
@@ -81,15 +103,6 @@ export function MainApp() {
       setLogoClicks(newClicks);
     }
   };
-
-  const themes: { id: Theme; name: string }[] = [
-    { id: 'zinc', name: 'Charcoal' },
-    { id: 'slate', name: 'Slate' },
-    { id: 'emerald', name: 'Emerald' },
-    { id: 'rose', name: 'Rose' },
-    { id: 'amber', name: 'Amber' },
-    { id: 'blue', name: 'Cerulean' },
-  ];
 
   // Load from local storage on mount
   useEffect(() => {
@@ -172,6 +185,47 @@ export function MainApp() {
     localStorage.setItem('fretmaster-active-tab', activeTab);
   }, [activeTab]);
 
+  const recordHistory = (currentProg: Chord[]) => {
+    setPast(prev => [...prev, currentProg].slice(-50));
+    setFuture([]);
+  };
+
+  const undo = () => {
+    if (past.length === 0) return;
+    const previous = past[past.length - 1];
+    const newPast = past.slice(0, past.length - 1);
+    
+    setFuture(prev => [progression, ...prev].slice(0, 50));
+    setPast(newPast);
+    setProgression(previous);
+  };
+
+  const redo = () => {
+    if (future.length === 0) return;
+    const next = future[0];
+    const newFuture = future.slice(1);
+    
+    setPast(prev => [...prev, progression].slice(-50));
+    setFuture(newFuture);
+    setProgression(next);
+  };
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
+        if (e.shiftKey) {
+          redo();
+        } else {
+          undo();
+        }
+      } else if ((e.ctrlKey || e.metaKey) && e.key === 'y') {
+        redo();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [progression, past, future]);
+
   // Filter chord groups based on search query
   const filteredGroups = CHORD_GROUPS.filter(group => 
     `${group.root}${group.suffix} ${group.quality}`.toLowerCase().includes(searchQuery.toLowerCase())
@@ -187,6 +241,7 @@ export function MainApp() {
       await Tone.context.resume();
     }
     
+    recordHistory(progression);
     setProgression([...progression, { ...chord, id: `${chord.id}-${Date.now()}` }]);
     if (autoPlayEnabled) {
       playChord(chord);
@@ -194,12 +249,14 @@ export function MainApp() {
   };
 
   const removeFromProgression = (index: number) => {
+    recordHistory(progression);
     const newProgression = [...progression];
     newProgression.splice(index, 1);
     setProgression(newProgression);
   };
   
   const updateProgressionChord = (index: number, newChord: Chord) => {
+    recordHistory(progression);
     const newProgression = [...progression];
     // Extract timestamp at the end of the id to keep key stable
     const match = progression[index].id.match(/-(\d+)$/);
@@ -213,40 +270,52 @@ export function MainApp() {
   const playProgression = async () => {
     if (progression.length === 0 || isPlayingProgression) return;
     
+    // Resume audio context if suspended
+    if (Tone.context.state !== 'running') {
+      await Tone.context.resume();
+    }
+
     setIsPlayingProgression(true);
     playIdRef.current++;
     const currentPlayId = playIdRef.current;
     
-    // Resume audio context if suspended (needed on some browsers)
-    if (Tone.context.state !== 'running') {
-      await Tone.context.resume();
-    }
+    // Clear any existing transport events
+    Tone.Transport.cancel();
+    Tone.Transport.stop();
 
     const beatDurationMs = (60 / bpm) * 1000;
     const chordDurationMs = (beatDurationMs * 4) / playbackSpeed;
     const chordDurationSec = chordDurationMs / 1000;
     
-    const startTime = Tone.now() + 0.1;
-    
-    for (let i = 0; i < progression.length; i++) {
-        // Schedule audio perfectly
-        playChord(progression[i], startTime + i * chordDurationSec, playbackSpeed, chordDurationSec);
+    // Schedule all chords on the transport
+    progression.forEach((chord, i) => {
+      const time = i * chordDurationSec;
+      
+      Tone.Transport.schedule((t) => {
+        playChord(chord, t, playbackSpeed, chordDurationSec);
         
-        // Schedule UI update
         Tone.Draw.schedule(() => {
-            if (playIdRef.current === currentPlayId) {
-                setPlayingIndex(i);
-            }
-        }, startTime + i * chordDurationSec);
-    }
+          if (playIdRef.current === currentPlayId) {
+            setPlayingIndex(i);
+          }
+        }, t);
+      }, time);
+    });
 
-    // Schedule cleanup
-    Tone.Draw.schedule(() => {
+    // Schedule cleanup at the end
+    const totalDuration = progression.length * chordDurationSec;
+    Tone.Transport.schedule((t) => {
+      Tone.Draw.schedule(() => {
         if (playIdRef.current === currentPlayId) {
-            setIsPlayingProgression(false);
-            setPlayingIndex(null);
+          setIsPlayingProgression(false);
+          setPlayingIndex(null);
+          Tone.Transport.stop();
         }
-    }, startTime + progression.length * chordDurationSec);
+      }, t);
+    }, totalDuration);
+
+    // Start the transport
+    Tone.Transport.start("+0.1");
   };
 
 
@@ -258,8 +327,33 @@ export function MainApp() {
   };
 
   const clearProgression = () => {
+    recordHistory(progression);
     setProgression([]);
     stopProgression();
+  };
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+        activationConstraint: {
+            distance: 5,
+        },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (over && active.id !== over.id) {
+      recordHistory(progression);
+      setProgression((items) => {
+        const oldIndex = items.findIndex(item => item.id === active.id);
+        const newIndex = items.findIndex(item => item.id === over.id);
+        return arrayMove(items, oldIndex, newIndex);
+      });
+    }
   };
 
   return (
@@ -397,19 +491,42 @@ export function MainApp() {
               <Music size={14} /> Progression Track
             </span>
             <div className="flex items-center space-x-2">
+              <div className="flex border border-border mr-2 bg-background">
+                <button
+                  onClick={undo}
+                  disabled={past.length === 0}
+                  className="p-1.5 hover:bg-muted text-muted-foreground hover:text-primary disabled:opacity-30 transition-colors border-r border-border"
+                  title="Undo (Ctrl+Z)"
+                >
+                  <Undo2 size={14} />
+                </button>
+                <button
+                  onClick={redo}
+                  disabled={future.length === 0}
+                  className="p-1.5 hover:bg-muted text-muted-foreground hover:text-primary disabled:opacity-30 transition-colors"
+                  title="Redo (Ctrl+Y)"
+                >
+                  <Redo2 size={14} />
+                </button>
+              </div>
+              
               <button
                 onClick={() => setIsSaveModalOpen(true)}
-                className="px-4 py-1.5 bg-primary/10 border border-primary/20 text-primary hover:bg-primary/20 hover:border-primary/30 transition-colors text-xs font-bold uppercase flex items-center gap-2"
+                className="flex items-center space-x-2 px-3 py-1.5 border border-border bg-background hover:border-primary transition-colors text-[10px] font-mono tracking-widest uppercase text-muted-foreground"
               >
-                <Save size={14} /> Save / Load
+                <Save size={14} className="text-primary" />
+                <span>Save / Load</span>
               </button>
+
               <button
                 onClick={clearProgression}
                 disabled={progression.length === 0}
-                className="px-4 py-1.5 border border-primary/20 text-primary hover:bg-primary/10 hover:border-primary/30 disabled:opacity-50 transition-colors text-xs font-bold uppercase flex items-center gap-2"
+                className="flex items-center space-x-2 px-3 py-1.5 border border-border bg-background hover:border-primary transition-colors text-[10px] font-mono tracking-widest uppercase text-muted-foreground disabled:opacity-30"
               >
-                <Trash2 size={14} /> Clear
+                <Trash2 size={14} className="text-primary" />
+                <span>Clear</span>
               </button>
+
               {isPlayingProgression ? (
                 <button
                   onClick={stopProgression}
@@ -449,63 +566,72 @@ export function MainApp() {
                 </div>
               </div>
             ) : (
-              <div className="flex flex-col gap-12">
-                <div className="flex flex-wrap gap-4 items-start">
-                  {progression.map((chord, index) => {
-                     const group = CHORD_GROUPS.find(g => g.root === chord.root && g.suffix === chord.suffix);
-                     const previousChord = index > 0 ? progression[index - 1] : undefined;
-                     const match = chord.id.match(/-(\d+)$/);
-                     const timestamp = match ? match[1] : chord.id;
-                     return (
-                      <InteractiveChord 
-                        key={timestamp} 
-                        chord={chord}
-                        group={group}
-                        viewMode="progression"
-                        indexLabel={index + 1}
-                        lastChord={previousChord}
-                        isCurrentlyPlaying={playingIndex === index}
-                        onRemove={() => removeFromProgression(index)}
-                        onUpdateChord={(newChord) => updateProgressionChord(index, newChord)}
-                      />
-                     );
-                  })}
-                  
-                  <div className="pt-0 shrink-0">
-                    <button 
-                      className="w-[180px] h-[206px] shrink-0 border border-dashed border-border hover:border-primary flex items-center justify-center group transition-colors bg-muted/10 hover:bg-muted/30"
-                      onClick={() => {
-                        const el = document.querySelector('input[type="text"]') as HTMLInputElement;
-                        el?.focus();
-                      }}
+                <div className="flex flex-col gap-12">
+                  <div className="flex flex-wrap gap-4 items-start">
+                    <DndContext 
+                      sensors={sensors}
+                      collisionDetection={closestCenter}
+                      onDragEnd={handleDragEnd}
                     >
-                      <span className="text-2xl text-muted-foreground group-hover:text-primary transition-colors font-mono">+</span>
-                    </button>
+                      <SortableContext 
+                        items={progression.map(c => c.id)}
+                        strategy={horizontalListSortingStrategy}
+                      >
+                        {progression.map((chord, index) => {
+                          const group = CHORD_GROUPS.find(g => g.root === chord.root && g.suffix === chord.suffix);
+                          const previousChord = index > 0 ? progression[index - 1] : undefined;
+                          return (
+                            <SortableChord 
+                              key={chord.id} 
+                              id={chord.id}
+                              index={index}
+                              chord={chord}
+                              group={group}
+                              lastChord={previousChord}
+                              isCurrentlyPlaying={playingIndex === index}
+                              onRemove={() => removeFromProgression(index)}
+                              onUpdateChord={(newChord) => updateProgressionChord(index, newChord)}
+                            />
+                          );
+                        })}
+                      </SortableContext>
+                    </DndContext>
+                    
+                    <div className="pt-0 shrink-0">
+                      <button 
+                        className="w-[180px] h-[206px] shrink-0 border border-dashed border-border hover:border-primary flex items-center justify-center group transition-colors bg-muted/10 hover:bg-muted/30"
+                        onClick={() => {
+                          const el = document.querySelector('input[type="text"]') as HTMLInputElement;
+                          el?.focus();
+                        }}
+                      >
+                        <span className="text-2xl text-muted-foreground group-hover:text-primary transition-colors font-mono">+</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Suggestions Box */}
+                  <div className="bg-muted/30 border border-border p-6 mt-8 w-full">
+                     <h4 className="text-[10px] uppercase font-bold tracking-widest text-primary flex items-center gap-2 mb-4">
+                       <Sparkles size={12} /> Suggested Next Chords (Voice Leading Applied)
+                     </h4>
+                     <div className="flex flex-wrap gap-4">
+                       {suggestedChords.map((sc, i) => {
+                          const group = CHORD_GROUPS.find(g => g.root === sc.root && g.suffix === sc.suffix) || { id: '', root: sc.root, suffix: sc.suffix, quality: sc.quality, voicings: [sc] };
+                          return (
+                            <InteractiveChord 
+                              key={'sugg-' + sc.id + i} 
+                              chord={sc}
+                              group={group}
+                              lastChord={lastChord}
+                              viewMode="compact"
+                              onAdd={() => addToProgression(sc)}
+                            />
+                          );
+                       })}
+                     </div>
                   </div>
                 </div>
-
-                {/* Suggestions Box */}
-                <div className="bg-muted/30 border border-border p-6 mt-8 w-full">
-                   <h4 className="text-[10px] uppercase font-bold tracking-widest text-primary flex items-center gap-2 mb-4">
-                     <Sparkles size={12} /> Suggested Next Chords (Voice Leading Applied)
-                   </h4>
-                   <div className="flex flex-wrap gap-4">
-                     {suggestedChords.map((sc, i) => {
-                        const group = CHORD_GROUPS.find(g => g.root === sc.root && g.suffix === sc.suffix) || { id: '', root: sc.root, suffix: sc.suffix, quality: sc.quality, voicings: [sc] };
-                        return (
-                          <InteractiveChord 
-                            key={'sugg-' + sc.id + i} 
-                            chord={sc}
-                            group={group}
-                            lastChord={lastChord}
-                            viewMode="compact"
-                            onAdd={() => addToProgression(sc)}
-                          />
-                        );
-                     })}
-                   </div>
-                </div>
-              </div>
             )}
           </div>
 
@@ -584,7 +710,13 @@ export function MainApp() {
         isOpen={isSaveModalOpen}
         onClose={() => setIsSaveModalOpen(false)}
         currentProgression={progression}
-        onLoadProgression={(p) => setProgression(p)}
+        onLoadProgression={(p, name) => {
+          recordHistory(progression);
+          setProgression(p);
+          if (name) setTrackName(name);
+        }}
+        trackName={trackName}
+        onTrackNameChange={setTrackName}
       />
 
       {/* Theme Selection Modal */}
@@ -617,5 +749,3 @@ export function MainApp() {
     </>
   );
 }
-
-// Adding custom scrollbar styling in index.css is better but we can use Tailwind classes or global CSS

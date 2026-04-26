@@ -10,8 +10,12 @@
 
 -   **Interactive Fretboard**: Explore scales and chords across the entire neck.
 -   **High-Fidelity Sound**: Realistic guitar samples powered by a native Tone.js engine.
--   **Premium UI**: Sleek, glassmorphic design with multiple professional themes.
--   **Offline First**: All assets, fonts, and sounds are locally hosted for zero-latency, no-internet-required usage.
+-   **Undo/Redo System**: History-aware progression editing with full keyboard shortcut support (`Ctrl+Z`, `Ctrl+Y`).
+-   **Pro Export Suite**: Export your creations as High-Res Images, PDF Documents, or redesigned Text Sheets.
+-   **Intelligent Track Naming**: Automatic synchronization between saved tracks and document export titles.
+-   **Track Manager**: Organize your progressions into collections and folders for easy access.
+-   **Premium UI**: Sleek, glassmorphic design with 20+ professional themes and a live document designer.
+-   **Offline First**: All assets, fonts, and sounds are locally hosted for zero-latency usage.
 -   **Window Management**: Custom, frameless window controls for a modern desktop feel.
 
 ## 🚀 Getting Started
@@ -65,7 +69,12 @@ FretMaster stands on the shoulders of these amazing open-source resources:
 
 ## 📜 License
 
-This project is licensed under the GPL-3.0 License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the **GNU General Public License v3.0** - see the [LICENSE](LICENSE) file for details.
+
+---
+
+### 💾 Data Persistence
+FretMaster stores your saved progressions, collections, and settings in the local application data directory. This data is tied to the application ID (`com.fretmaster.app`) and will **persist automatically** when you install updates or new versions of the application.
 
 ---
 

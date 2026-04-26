@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Save, Palette, Play as PlayIcon } from 'lucide-react';
+import { X, Save, Palette, Play as PlayIcon, Download, Share2 } from 'lucide-react';
 import { CustomThemeData, useTheme } from './ThemeProvider';
 import { HexColorPicker } from 'react-colorful';
 import { ChordDiagram } from './ChordDiagram';
@@ -81,6 +81,22 @@ export function CustomThemeModal({ isOpen, onClose }: CustomThemeModalProps) {
     }
   };
 
+  const exportTheme = () => {
+    const themeData = {
+        name,
+        description,
+        colors,
+        version: '1.0'
+    };
+    const blob = new Blob([JSON.stringify(themeData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${name.replace(/\s+/g, '_')}.fmtheme`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   const resetToDefault = () => {
     setColors(defaultColors);
     setActiveColorPicker(null);
@@ -106,24 +122,40 @@ export function CustomThemeModal({ isOpen, onClose }: CustomThemeModalProps) {
         
         {/* Mockup Panel */}
         <div 
-           className="w-full md:w-[45%] p-8 flex flex-col border-b md:border-b-0 md:border-r border-border relative transition-colors duration-300"
+           className="w-full md:w-[45%] p-8 flex flex-col border-b md:border-b-0 md:border-r border-border relative transition-colors duration-300 overflow-hidden"
            style={{ backgroundColor: colors.background, color: colors.foreground }}
         >
-          <div className="flex flex-col gap-6 h-full max-w-sm mx-auto w-full pt-8">
-            <div className="flex items-center justify-between mb-4">
+          <div 
+             className="absolute inset-0 opacity-0 hover:opacity-10 pointer-events-none transition-opacity bg-white"
+             style={{ display: activeColorPicker === 'background' ? 'block' : 'none' }}
+          />
+
+          <div className="flex flex-col gap-6 h-full max-w-sm mx-auto w-full pt-8 relative z-10">
+            <div 
+                className="flex items-center justify-between mb-4 cursor-pointer hover:outline hover:outline-2 hover:outline-dashed hover:outline-primary/50 p-2 -m-2 rounded transition-all"
+                onClick={() => setActiveColorPicker('foreground')}
+            >
               <h2 className="font-serif italic text-3xl transition-colors duration-300" style={{ color: colors.foreground }}>Fretmaster</h2>
-              <div style={{ color: colors.primary }} className="text-2xl font-bold font-serif italic transition-colors duration-300">FM.</div>
+              <div style={{ color: colors.primary }} className="text-2xl font-bold font-serif italic transition-colors duration-300" onClick={(e) => { e.stopPropagation(); setActiveColorPicker('primary'); }}>FM.</div>
             </div>
 
             <div 
-               className="rounded-lg p-6 flex flex-col gap-6 border shadow-2xl transition-colors duration-300 relative overflow-hidden"
+               className="rounded-lg p-6 flex flex-col gap-6 border shadow-2xl transition-colors duration-300 relative overflow-hidden cursor-pointer hover:ring-2 hover:ring-primary/30"
                style={{ backgroundColor: colors.card, borderColor: colors.border }}
+               onClick={() => setActiveColorPicker('card')}
             >
-               <h3 className="text-xs font-bold uppercase tracking-widest transition-colors duration-300" style={{ color: colors.mutedForeground }}>Track Overview</h3>
+               <h3 
+                  className="text-xs font-bold uppercase tracking-widest transition-colors duration-300 cursor-pointer hover:text-primary" 
+                  style={{ color: colors.mutedForeground }}
+                  onClick={(e) => { e.stopPropagation(); setActiveColorPicker('mutedForeground'); }}
+               >
+                 Track Overview
+               </h3>
                
                <div 
-                 className="p-4 rounded-md flex items-center justify-center gap-4 text-sm font-mono font-bold transition-colors duration-300 shadow-inner relative"
+                 className="p-4 rounded-md flex items-center justify-center gap-4 text-sm font-mono font-bold transition-colors duration-300 shadow-inner relative cursor-pointer hover:border-primary"
                  style={{ backgroundColor: colors.muted, color: colors.foreground, borderColor: colors.border, borderWidth: '1px', minHeight: '180px' }}
+                 onClick={(e) => { e.stopPropagation(); setActiveColorPicker('muted'); }}
                >
                   <div className="flex flex-col items-center">
                     {/* Tiny mock chord diagram injected */}
@@ -145,26 +177,32 @@ export function CustomThemeModal({ isOpen, onClose }: CustomThemeModalProps) {
 
                <div className="flex items-center gap-3 pt-2">
                   <button 
-                    className="px-6 py-2.5 font-bold uppercase text-[10px] tracking-widest flex items-center gap-2 transition-all duration-300"
+                    className="px-6 py-2.5 font-bold uppercase text-[10px] tracking-widest flex items-center gap-2 transition-all duration-300 hover:scale-105 active:scale-95"
                     style={{ backgroundColor: colors.primary, color: colors.primaryForeground, boxShadow: `0 4px 14px 0 ${colors.primary}40` }}
+                    onClick={(e) => { e.stopPropagation(); setActiveColorPicker('primary'); }}
                   >
                     <PlayIcon size={14} fill="currentColor" /> Play
                   </button>
                   <button 
-                    className="px-6 py-2.5 font-bold uppercase text-[10px] tracking-widest border transition-colors duration-300"
+                    className="px-6 py-2.5 font-bold uppercase text-[10px] tracking-widest border transition-colors duration-300 hover:bg-white/10"
                     style={{ backgroundColor: 'transparent', color: colors.foreground, borderColor: colors.border }}
+                    onClick={(e) => { e.stopPropagation(); setActiveColorPicker('border'); }}
                   >
                     Clear
                   </button>
                </div>
             </div>
 
-            <div className="mt-auto items-center flex gap-4 transition-colors duration-300" style={{ color: colors.mutedForeground }}>
+            <div 
+                className="mt-auto items-center flex gap-4 transition-colors duration-300 cursor-pointer p-2 -m-2 rounded hover:bg-white/5" 
+                style={{ color: colors.mutedForeground }}
+                onClick={() => setActiveColorPicker('background')}
+            >
                 <div className="w-10 h-10 rounded-full flex items-center justify-center border transition-colors duration-300" style={{ borderColor: colors.border, backgroundColor: colors.card }}>
                    <Palette size={16} />
                 </div>
                 <div className="text-[10px] uppercase font-bold tracking-widest">
-                  Preview 
+                  Click background to edit 
                 </div>
             </div>
           </div>
@@ -256,12 +294,21 @@ export function CustomThemeModal({ isOpen, onClose }: CustomThemeModalProps) {
           </div>
 
           <div className="p-6 border-t border-border flex flex-col sm:flex-row justify-between gap-3 bg-muted/10 shrink-0">
-            <button 
-              onClick={resetToDefault}
-              className="px-4 py-2 text-muted-foreground hover:text-foreground text-xs font-bold uppercase transition-colors"
-            >
-              Reset to default
-            </button>
+            <div className="flex gap-2">
+              <button 
+                onClick={resetToDefault}
+                className="px-4 py-2 text-muted-foreground hover:text-foreground text-xs font-bold uppercase transition-colors"
+              >
+                Reset
+              </button>
+              <button 
+                onClick={exportTheme}
+                className="px-4 py-2 text-primary hover:bg-primary/10 text-xs font-bold uppercase transition-colors flex items-center gap-2"
+                title="Export as .fmtheme"
+              >
+                <Download size={14} /> .fmtheme
+              </button>
+            </div>
             <div className="flex gap-3">
               <button 
                 onClick={onClose}

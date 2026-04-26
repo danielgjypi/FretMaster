@@ -104,13 +104,21 @@ export function ThemeModal({ isOpen, onClose, currentTheme, onSelectTheme }: The
                 )}
                 style={{ 
                   height: '240px',
+                  '--background': t.colors.background,
                   '--color-background': t.colors.background,
+                  '--foreground': t.colors.foreground,
                   '--color-foreground': t.colors.foreground,
+                  '--primary': t.colors.primary,
                   '--color-primary': t.colors.primary,
+                  '--primary-foreground': t.colors.primaryForeground,
                   '--color-primary-foreground': t.colors.primaryForeground,
+                  '--muted': t.colors.muted,
                   '--color-muted': t.colors.muted,
+                  '--muted-foreground': t.colors.mutedForeground,
                   '--color-muted-foreground': t.colors.mutedForeground,
+                  '--border': t.colors.border,
                   '--color-border': t.colors.border,
+                  '--card': t.colors.card,
                   '--color-card': t.colors.card,
                   '--dot-glow': 'drop-shadow(0 0 4px var(--primary))',
                 } as React.CSSProperties}
@@ -174,19 +182,28 @@ export function ThemeModal({ isOpen, onClose, currentTheme, onSelectTheme }: The
                 }}
                 className={cn(
                   "theme-preview-card border cursor-pointer hover:scale-[1.02] transition-transform duration-200 flex flex-col overflow-hidden",
+                  `theme-${t.id}`,
                   currentTheme === t.id 
                     ? (t.isLight ? "ring-2 ring-primary border-primary" : "ring-2 ring-primary border-primary shadow-[0_0_15px_var(--primary)]") 
                     : "border-border hover:border-primary/50"
                 )}
                 style={{ 
                   height: '240px',
+                  '--background': t.colors.bg,
                   '--color-background': t.colors.bg,
+                  '--foreground': t.colors.fg,
                   '--color-foreground': t.colors.fg,
+                  '--primary': t.colors.primary,
                   '--color-primary': t.colors.primary,
+                  '--primary-foreground': t.colors.primaryFg,
                   '--color-primary-foreground': t.colors.primaryFg,
+                  '--muted': t.colors.muted,
                   '--color-muted': t.colors.muted,
+                  '--muted-foreground': t.colors.mutedFg,
                   '--color-muted-foreground': t.colors.mutedFg,
+                  '--border': t.colors.border,
                   '--color-border': t.colors.border,
+                  '--card': t.colors.card,
                   '--color-card': t.colors.card,
                   '--dot-glow': t.isLight ? 'none' : 'drop-shadow(0 0 4px var(--primary))',
                 } as React.CSSProperties}

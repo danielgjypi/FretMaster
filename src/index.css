@@ -1,27 +1,27 @@
 @font-face {
   font-family: 'Inter';
-  src: url('fonts/Inter-Regular.ttf') format('truetype');
+  src: url('/fonts/Inter-Regular.ttf') format('truetype');
   font-weight: 400;
   font-style: normal;
   font-display: swap;
 }
 @font-face {
   font-family: 'Inter';
-  src: url('fonts/Inter-Medium.ttf') format('truetype');
+  src: url('/fonts/Inter-Medium.ttf') format('truetype');
   font-weight: 500;
   font-style: normal;
   font-display: swap;
 }
 @font-face {
   font-family: 'Inter';
-  src: url('fonts/Inter-SemiBold.ttf') format('truetype');
+  src: url('/fonts/Inter-SemiBold.ttf') format('truetype');
   font-weight: 600;
   font-style: normal;
   font-display: swap;
 }
 @font-face {
   font-family: 'Inter';
-  src: url('fonts/Inter-Bold.ttf') format('truetype');
+  src: url('/fonts/Inter-Bold.ttf') format('truetype');
   font-weight: 700;
   font-style: normal;
   font-display: swap;
@@ -29,28 +29,28 @@
 
 @font-face {
   font-family: 'Playfair Display';
-  src: url('fonts/PlayfairDisplay-Regular.ttf') format('truetype');
+  src: url('/fonts/PlayfairDisplay-Regular.ttf') format('truetype');
   font-weight: 400;
   font-style: normal;
   font-display: swap;
 }
 @font-face {
   font-family: 'Playfair Display';
-  src: url('fonts/PlayfairDisplay-Bold.ttf') format('truetype');
+  src: url('/fonts/PlayfairDisplay-Bold.ttf') format('truetype');
   font-weight: 700;
   font-style: normal;
   font-display: swap;
 }
 @font-face {
   font-family: 'Playfair Display';
-  src: url('fonts/PlayfairDisplay-Italic.ttf') format('truetype');
+  src: url('/fonts/PlayfairDisplay-Italic.ttf') format('truetype');
   font-weight: 400;
   font-style: italic;
   font-display: swap;
 }
 @font-face {
   font-family: 'Playfair Display';
-  src: url('fonts/PlayfairDisplay-BoldItalic.ttf') format('truetype');
+  src: url('/fonts/PlayfairDisplay-BoldItalic.ttf') format('truetype');
   font-weight: 700;
   font-style: italic;
   font-display: swap;
@@ -58,14 +58,14 @@
 
 @font-face {
   font-family: 'JetBrains Mono';
-  src: url('fonts/JetBrainsMono-Regular.ttf') format('truetype');
+  src: url('/fonts/JetBrainsMono-Regular.ttf') format('truetype');
   font-weight: 400;
   font-style: normal;
   font-display: swap;
 }
 @font-face {
   font-family: 'JetBrains Mono';
-  src: url('fonts/JetBrainsMono-Bold.ttf') format('truetype');
+  src: url('/fonts/JetBrainsMono-Bold.ttf') format('truetype');
   font-weight: 700;
   font-style: normal;
   font-display: swap;
@@ -414,6 +414,142 @@
     --border: #d0d7de;
     --card: #ffffff;
     --dot-glow: none;
+  }
+
+  .theme-nebula {
+    --background: #0b0014;
+    --foreground: #e0b0ff;
+    --primary: #bf00ff;
+    --primary-foreground: #ffffff;
+    --muted: #1a0026;
+    --muted-foreground: #9d00d7;
+    --border: #4b0082;
+    --card: #0b0014;
+  }
+
+  .theme-forest {
+    --background: #0a1a0a;
+    --foreground: #d0f0d0;
+    --primary: #228b22;
+    --primary-foreground: #ffffff;
+    --muted: #051005;
+    --muted-foreground: #4a7c44;
+    --border: #1e3a1e;
+    --card: #0a1a0a;
+  }
+
+
+  .theme-coffee {
+    --background: #1b1411;
+    --foreground: #e3d5ca;
+    --primary: #96715b;
+    --primary-foreground: #ffffff;
+    --muted: #2a1e19;
+    --muted-foreground: #a98467;
+    --border: #3c2a21;
+    --card: #1b1411;
+  }
+
+
+  .theme-volcano {
+    --background: #1a0a0a;
+    --foreground: #fecaca;
+    --primary: #ef4444;
+    --primary-foreground: #ffffff;
+    --muted: #2a0a0a;
+    --muted-foreground: #f87171;
+    --border: #7f1d1d;
+    --card: #1a0a0a;
+  }
+
+  .theme-gold {
+    --background: #0d0d0d;
+    --foreground: #ffffff;
+    --primary: #d4af37;
+    --primary-foreground: #000000;
+    --muted: #1a1a1a;
+    --muted-foreground: #c5a028;
+    --border: #d4af37;
+    --card: #0d0d0d;
+  }
+
+  .theme-midnight {
+    --background: #000000;
+    --foreground: #ffffff;
+    --primary: #ffffff;
+    --primary-foreground: #000000;
+    --muted: #111111;
+    --muted-foreground: #888888;
+    --border: #333333;
+    --card: #000000;
+  }
+
+  .theme-paper {
+    --background: #f4ecd8;
+    --foreground: #432818;
+    --primary: #99582a;
+    --primary-foreground: #ffffff;
+    --muted: #ede0bb;
+    --muted-foreground: #6f4e37;
+    --border: #bb9457;
+    --card: #f4ecd8;
+    --dot-glow: none;
+  }
+
+  .theme-clay {
+    --background: #2b1a14;
+    --foreground: #f3e9dc;
+    --primary: #e76f51;
+    --primary-foreground: #ffffff;
+    --muted: #3d251d;
+    --muted-foreground: #f4a261;
+    --border: #264653;
+    --card: #2b1a14;
+  }
+
+  .theme-pastel-sky {
+    --background: #fdf2f8;
+    --foreground: #be185d;
+    --primary: #f472b6;
+    --primary-foreground: #ffffff;
+    --muted: #fce7f3;
+    --muted-foreground: #db2777;
+    --border: #fbcfe8;
+    --card: #fdf2f8;
+    --dot-glow: none;
+  }
+
+  .theme-moss {
+    --background: #1a1d1a;
+    --foreground: #e8ede8;
+    --primary: #7c9070;
+    --primary-foreground: #ffffff;
+    --muted: #252a25;
+    --muted-foreground: #9ca986;
+    --border: #3a443a;
+    --card: #1a1d1a;
+  }
+
+  .theme-industrial {
+    --background: #1b1b1e;
+    --foreground: #e2e2e6;
+    --primary: #94a3b8;
+    --primary-foreground: #0f172a;
+    --muted: #27272a;
+    --muted-foreground: #94a3b8;
+    --border: #4b5563;
+    --card: #1b1b1e;
+  }
+
+  .theme-royal {
+    --background: #1e1b4b;
+    --foreground: #e0e7ff;
+    --primary: #818cf8;
+    --primary-foreground: #ffffff;
+    --muted: #312e81;
+    --muted-foreground: #a5b4fc;
+    --border: #4338ca;
+    --card: #1e1b4b;
   }
 }
 

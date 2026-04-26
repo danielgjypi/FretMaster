@@ -93,11 +93,11 @@ export function ChordDiagram({ chord, className }: ChordDiagramProps) {
                       cx={cx} 
                       cy={cy} 
                       r="6" 
-                      className="fill-primary" 
+                      fill="var(--primary)"
                       style={{ filter: showGlow ? 'var(--dot-glow, drop-shadow(0 0 4px var(--primary)))' : 'none' }}
                     />
                     {showNoteNames && (
-                      <text x={cx} y={cy + 2.5} fontSize="6" className="fill-primary-foreground font-bold pointer-events-none" textAnchor="middle">
+                      <text x={cx} y={cy + 2.5} fontSize="6" fill="var(--primary-foreground)" className="font-bold pointer-events-none" textAnchor="middle">
                         {noteName}
                       </text>
                     )}

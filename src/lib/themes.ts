@@ -36,6 +36,18 @@ export const THEMES: {
   { id: 'rosewater', name: 'Cherry Blossom', isLight: true, colors: { bg: '#fff1f2', fg: '#881337', primary: '#f43f5e', primaryFg: '#fff1f2', muted: '#ffe4e6', mutedFg: '#e11d48', border: '#fecdd3', card: '#fff1f2' } },
   { id: 'cyberpunk', name: 'Night City', colors: { bg: '#0f0f15', fg: '#fcee0a', primary: '#00ff9f', primaryFg: '#0f0f15', muted: '#1c1c24', mutedFg: '#d90b8f', border: '#d90b8f', card: '#0f0f15' } },
   { id: 'github-light', name: 'Clean Branch', isLight: true, colors: { bg: '#ffffff', fg: '#24292f', primary: '#0969da', primaryFg: '#ffffff', muted: '#f6f8fa', mutedFg: '#57606a', border: '#d0d7de', card: '#ffffff' } },
+  { id: 'nebula', name: 'Deep Nebula', colors: { bg: '#0b0014', fg: '#e0b0ff', primary: '#bf00ff', primaryFg: '#ffffff', muted: '#1a0026', mutedFg: '#9d00d7', border: '#4b0082', card: '#0b0014' } },
+  { id: 'forest', name: 'Deep Forest', colors: { bg: '#0a1a0a', fg: '#d0f0d0', primary: '#228b22', primaryFg: '#ffffff', muted: '#051005', mutedFg: '#4a7c44', border: '#1e3a1e', card: '#0a1a0a' } },
+  { id: 'coffee', name: 'Espresso Roast', colors: { bg: '#1b1411', fg: '#e3d5ca', primary: '#96715b', primaryFg: '#ffffff', muted: '#2a1e19', mutedFg: '#a98467', border: '#3c2a21', card: '#1b1411' } },
+  { id: 'volcano', name: 'Magma Chamber', colors: { bg: '#1a0a0a', fg: '#fecaca', primary: '#ef4444', primaryFg: '#ffffff', muted: '#2a0a0a', mutedFg: '#f87171', border: '#7f1d1d', card: '#1a0a0a' } },
+  { id: 'gold', name: 'Luxury Gold', colors: { bg: '#0d0d0d', fg: '#ffffff', primary: '#d4af37', primaryFg: '#000000', muted: '#1a1a1a', mutedFg: '#c5a028', border: '#d4af37', card: '#0d0d0d' } },
+  { id: 'midnight', name: 'Pure Midnight', colors: { bg: '#000000', fg: '#ffffff', primary: '#ffffff', primaryFg: '#000000', muted: '#111111', mutedFg: '#888888', border: '#333333', card: '#000000' } },
+  { id: 'paper', name: 'Ancient Scroll', isLight: true, colors: { bg: '#f4ecd8', fg: '#432818', primary: '#99582a', primaryFg: '#ffffff', muted: '#ede0bb', mutedFg: '#6f4e37', border: '#bb9457', card: '#f4ecd8' } },
+  { id: 'clay', name: 'Terracotta', colors: { bg: '#2b1a14', fg: '#f3e9dc', primary: '#e76f51', primaryFg: '#ffffff', muted: '#3d251d', mutedFg: '#f4a261', border: '#264653', card: '#2b1a14' } },
+  { id: 'pastel-sky', name: 'Cotton Candy', isLight: true, colors: { bg: '#fdf2f8', fg: '#be185d', primary: '#f472b6', primaryFg: '#ffffff', muted: '#fce7f3', mutedFg: '#db2777', border: '#fbcfe8', card: '#fdf2f8' } },
+  { id: 'moss', name: 'Ancient Moss', colors: { bg: '#1a1d1a', fg: '#e8ede8', primary: '#7c9070', primaryFg: '#ffffff', muted: '#252a25', mutedFg: '#9ca986', border: '#3a443a', card: '#1a1d1a' } },
+  { id: 'industrial', name: 'Steel Mill', colors: { bg: '#1b1b1e', fg: '#e2e2e6', primary: '#94a3b8', primaryFg: '#0f172a', muted: '#27272a', mutedFg: '#94a3b8', border: '#4b5563', card: '#1b1b1e' } },
+  { id: 'royal', name: 'Royal Velvet', colors: { bg: '#1e1b4b', fg: '#e0e7ff', primary: '#818cf8', primaryFg: '#ffffff', muted: '#312e81', mutedFg: '#a5b4fc', border: '#4338ca', card: '#1e1b4b' } },
 ];
 
 // Safelist for Tailwind v4 so it doesn't prune dynamically constructed classes:

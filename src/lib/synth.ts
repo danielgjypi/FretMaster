@@ -16,18 +16,16 @@ export async function initSynth(instrumentName: string = 'acoustic_guitar_nylon'
     return;
   }
 
-  const audioContext = Tone.getContext().rawContext as AudioContext;
-  console.log(`AudioContext state: ${audioContext.state}`);
-  
   try {
+    if (instrumentName === 'custom') {
+      console.warn("Custom instrument selected but not yet implemented. Falling back to nylon guitar.");
+      return initSynth('acoustic_guitar_nylon');
+    }
     const url = `soundfonts/${instrumentName}-mp3.json`;
-    console.log(`Fetching soundfont: ${url}`);
-    
     const response = await fetch(url);
     if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
     const mapping = await response.json();
     
-    // Use Tone.Sampler instead of soundfont-player for better reliability
     return new Promise<void>((resolve, reject) => {
       const sampler = new Tone.Sampler({
         urls: mapping,
@@ -36,14 +34,13 @@ export async function initSynth(instrumentName: string = 'acoustic_guitar_nylon'
           instrument = sampler;
           currentInstrumentName = instrumentName;
           initialized = true;
-          console.log(`Instrument ${instrumentName} loaded successfully via Tone.Sampler`);
+          sampler.toDestination();
           resolve();
         },
         onerror: (error) => {
-          console.error(`Failed to load sampler for ${instrumentName}:`, error);
           reject(error);
         }
-      }).toDestination();
+      });
     });
   } catch (error) {
     console.error(`Failed to load instrument ${instrumentName}:`, error);
@@ -58,10 +55,7 @@ export function getCurrentInstrumentName() {
   return currentInstrumentName;
 }
 
-let currentBpm = 120;
-
 export function setBpm(bpm: number) {
-  currentBpm = bpm;
   Tone.Transport.bpm.value = bpm;
 }
 
@@ -75,13 +69,14 @@ export function setVolume(vol: number) {
 }
 
 export function stopSynth() {
+  Tone.Transport.stop();
+  Tone.Transport.cancel();
   if (instrument) {
     instrument.releaseAll();
   }
 }
 
 export async function playChord(chord: Chord, time?: number, playbackSpeedMulti: number = 1, duration: number = 2) {
-  console.log(`Playing chord: ${chord.root}${chord.suffix}`);
   if (!initialized || !instrument) {
     await initSynth(currentInstrumentName);
   }
@@ -91,10 +86,6 @@ export async function playChord(chord: Chord, time?: number, playbackSpeedMulti:
   const startTime = time !== undefined ? time : Tone.now();
   const strumSpeed = 0.03 / playbackSpeedMulti; 
   
-  // DEBUG: Play a simple beep to verify audio context
-  // const debugOsc = new Tone.Oscillator(440, "sine").toDestination().start(startTime).stop(startTime + 0.1);
-  // debugOsc.volume.value = -20;
-
   chord.notes.forEach((note, i) => {
     instrument!.triggerAttackRelease(note, duration, startTime + i * strumSpeed);
   });

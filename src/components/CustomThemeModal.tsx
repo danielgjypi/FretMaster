@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { X, Save, Palette, Play as PlayIcon, Download, Share2 } from 'lucide-react';
+import { X, Save, Palette, Play as PlayIcon, Download, Share2, Github } from 'lucide-react';
 import { CustomThemeData, useTheme } from './ThemeProvider';
 import { HexColorPicker } from 'react-colorful';
 import { ChordDiagram } from './ChordDiagram';
 import { motion, AnimatePresence } from 'motion/react';
+import { useEasterEgg } from './EasterEgg';
 
 interface CustomThemeModalProps {
   isOpen: boolean;
@@ -21,6 +22,7 @@ const mockThemeChord = {
 };
 
 export function CustomThemeModal({ isOpen, onClose }: CustomThemeModalProps) {
+  const { registerClick } = useEasterEgg();
   const { setTheme } = useTheme();
   const [name, setName] = useState('My Custom Theme');
   const [description, setDescription] = useState('A personalized theme for Fretmaster.');
@@ -38,6 +40,14 @@ export function CustomThemeModal({ isOpen, onClose }: CustomThemeModalProps) {
   };
 
   const [colors, setColors] = useState(defaultColors);
+
+  const handleOpenGithub = () => {
+    if (window.electronAPI) {
+      window.electronAPI.openExternal('https://github.com/danielgjypi/FretMaster');
+    } else {
+      window.open('https://github.com/danielgjypi/FretMaster', '_blank');
+    }
+  };
 
   useEffect(() => {
     if (isOpen) {
@@ -122,9 +132,10 @@ export function CustomThemeModal({ isOpen, onClose }: CustomThemeModalProps) {
         
         {/* Mockup Panel */}
         <div 
-           className="w-full md:w-[45%] p-8 flex flex-col border-b md:border-b-0 md:border-r border-border relative transition-colors duration-300 overflow-hidden"
+           className="w-full md:w-[45%] p-8 flex flex-col border-b md:border-b-0 md:border-r border-border relative transition-colors duration-300 overflow-hidden shrink-0"
            style={{ backgroundColor: colors.background, color: colors.foreground }}
         >
+          {/* ... existing mockup content ... */}
           <div 
              className="absolute inset-0 opacity-0 hover:opacity-10 pointer-events-none transition-opacity bg-white"
              style={{ display: activeColorPicker === 'background' ? 'block' : 'none' }}
@@ -140,7 +151,7 @@ export function CustomThemeModal({ isOpen, onClose }: CustomThemeModalProps) {
             </div>
 
             <div 
-               className="rounded-lg p-6 flex flex-col gap-6 border shadow-2xl transition-colors duration-300 relative overflow-hidden cursor-pointer hover:ring-2 hover:ring-primary/30"
+               className="rounded-none p-6 flex flex-col gap-6 border shadow-2xl transition-colors duration-300 relative overflow-hidden cursor-pointer hover:ring-2 hover:ring-primary/30"
                style={{ backgroundColor: colors.card, borderColor: colors.border }}
                onClick={() => setActiveColorPicker('card')}
             >
@@ -153,20 +164,27 @@ export function CustomThemeModal({ isOpen, onClose }: CustomThemeModalProps) {
                </h3>
                
                <div 
-                 className="p-4 rounded-md flex items-center justify-center gap-4 text-sm font-mono font-bold transition-colors duration-300 shadow-inner relative cursor-pointer hover:border-primary"
+                 className="p-4 rounded-none flex items-center justify-center gap-4 text-sm font-mono font-bold transition-colors duration-300 shadow-inner relative cursor-pointer hover:border-primary"
                  style={{ backgroundColor: colors.muted, color: colors.foreground, borderColor: colors.border, borderWidth: '1px', minHeight: '180px' }}
                  onClick={(e) => { e.stopPropagation(); setActiveColorPicker('muted'); }}
                >
                   <div className="flex flex-col items-center">
-                    {/* Tiny mock chord diagram injected */}
                     <div className="scale-[0.6] origin-center -my-2" style={{
+                      '--background': colors.background,
                       '--color-background': colors.background,
+                      '--foreground': colors.foreground,
                       '--color-foreground': colors.foreground,
+                      '--primary': colors.primary,
                       '--color-primary': colors.primary,
+                      '--primary-foreground': colors.primaryForeground,
                       '--color-primary-foreground': colors.primaryForeground,
+                      '--muted': colors.muted,
                       '--color-muted': colors.muted,
+                      '--muted-foreground': colors.mutedForeground,
                       '--color-muted-foreground': colors.mutedForeground,
+                      '--border': colors.border,
                       '--color-border': colors.border,
+                      '--card': colors.card,
                       '--color-card': colors.card,
                       '--dot-glow': `drop-shadow(0 0 4px ${colors.primary})`,
                     } as React.CSSProperties}>
@@ -198,7 +216,7 @@ export function CustomThemeModal({ isOpen, onClose }: CustomThemeModalProps) {
                 style={{ color: colors.mutedForeground }}
                 onClick={() => setActiveColorPicker('background')}
             >
-                <div className="w-10 h-10 rounded-full flex items-center justify-center border transition-colors duration-300" style={{ borderColor: colors.border, backgroundColor: colors.card }}>
+                <div className="w-10 h-10 rounded-none flex items-center justify-center border transition-colors duration-300" style={{ borderColor: colors.border, backgroundColor: colors.card }}>
                    <Palette size={16} />
                 </div>
                 <div className="text-[10px] uppercase font-bold tracking-widest">
@@ -210,39 +228,38 @@ export function CustomThemeModal({ isOpen, onClose }: CustomThemeModalProps) {
 
         {/* Builder Panel */}
         <div className="w-full md:w-[55%] flex flex-col bg-card">
-          <div className="flex items-center justify-between p-6 border-b border-border">
-            <div className="flex flex-col">
-              <h2 className="text-sm font-bold uppercase tracking-widest flex items-center gap-2 text-foreground">
-                 Custom Theme Builder
-              </h2>
-              <p className="text-xs text-muted-foreground mt-1">Design your own layout aesthetic.</p>
+          <div className="py-6 border-b border-border px-6 shrink-0 bg-muted/10 relative">
+            <div className="flex items-center justify-between">
+              <div className="flex flex-col">
+                <h2 className="text-xl font-serif italic text-foreground leading-none">Theme Studio</h2>
+                <p className="text-[9px] text-muted-foreground uppercase tracking-[0.2em] mt-2">Design your custom aesthetic</p>
+              </div>
+              <button onClick={onClose} className="text-muted-foreground hover:text-foreground transition-colors p-1">
+                <X size={20} />
+              </button>
             </div>
-            <button onClick={onClose} className="text-muted-foreground hover:text-foreground transition-colors p-2">
-              <X size={20} />
-            </button>
           </div>
 
-          <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-8 custom-scrollbar">
-            
+          <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-8 custom-scrollbar bg-background/10">
             {/* Meta */}
             <div className="flex flex-col gap-4">
               <div className="flex flex-col gap-2">
-                <label className="text-xs uppercase font-bold tracking-widest text-muted-foreground">Theme Name</label>
+                <label className="text-[10px] uppercase font-bold tracking-widest text-primary">Theme Name</label>
                 <input 
                   type="text" 
                   value={name}
                   onChange={e => setName(e.target.value)}
-                  className="bg-background border border-border px-3 py-2 text-sm focus:border-primary focus:outline-none transition-colors text-foreground"
+                  className="bg-background border border-border px-3 py-2 text-sm focus:border-primary focus:outline-none transition-colors text-foreground rounded-none"
                   placeholder="E.g. Synthwave Dark"
                 />
               </div>
               <div className="flex flex-col gap-2">
-                <label className="text-xs uppercase font-bold tracking-widest text-muted-foreground">Description</label>
+                <label className="text-[10px] uppercase font-bold tracking-widest text-primary">Description</label>
                 <input 
                   type="text" 
                   value={description}
                   onChange={e => setDescription(e.target.value)}
-                  className="bg-background border border-border px-3 py-2 text-sm focus:border-primary focus:outline-none transition-colors text-foreground"
+                  className="bg-background border border-border px-3 py-2 text-sm focus:border-primary focus:outline-none transition-colors text-foreground rounded-none"
                   placeholder="A cool dark theme with neon pinks..."
                 />
               </div>
@@ -250,12 +267,12 @@ export function CustomThemeModal({ isOpen, onClose }: CustomThemeModalProps) {
 
             {/* Colors */}
             <div className="flex flex-col gap-6">
-              <h3 className="text-xs uppercase font-bold tracking-widest text-muted-foreground border-b border-border pb-2">Color Palette</h3>
+              <h3 className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground border-b border-border/50 pb-2">Color Palette</h3>
               
-              <div className="grid gap-6">
+              <div className="grid gap-4">
                 {Object.entries(colors).map(([key, val]) => {
                   return (
-                    <div key={key} className="flex flex-col gap-3 bg-muted/30 p-4 border border-border/50">
+                    <div key={key} className="flex flex-col gap-3 bg-muted/20 p-4 border border-border/50">
                       <div className="flex items-center justify-between">
                         <label className="text-[10px] font-mono uppercase text-foreground font-bold">
                            --{key.replace(/([A-Z])/g, '-$1').toLowerCase()}
@@ -268,7 +285,7 @@ export function CustomThemeModal({ isOpen, onClose }: CustomThemeModalProps) {
                             className="bg-background border border-border px-2 py-1 text-xs focus:outline-none focus:border-primary w-20 uppercase font-mono text-foreground text-center"
                           />
                           <div 
-                             className="w-6 h-6 rounded shrink-0 border border-border shadow-inner cursor-pointer relative"
+                             className="w-6 h-6 rounded-none shrink-0 border border-border shadow-inner cursor-pointer relative"
                              style={{ backgroundColor: val as string }}
                              onClick={() => setActiveColorPicker(activeColorPicker === key ? null : key as keyof typeof defaultColors)}
                           />
@@ -290,35 +307,33 @@ export function CustomThemeModal({ isOpen, onClose }: CustomThemeModalProps) {
                 })}
               </div>
             </div>
-
           </div>
 
-          <div className="p-6 border-t border-border flex flex-col sm:flex-row justify-between gap-3 bg-muted/10 shrink-0">
-            <div className="flex gap-2">
+          <div className="p-6 border-t border-border flex flex-col sm:flex-row justify-between items-center gap-4 bg-muted/5 shrink-0">
+            <div className="flex gap-4">
+                <button 
+                    onClick={handleOpenGithub}
+                    className="text-[10px] uppercase tracking-[0.2em] font-mono flex items-center gap-1.5 hover:text-primary transition-colors group opacity-60"
+                >
+                    <Github size={12} className="text-primary" /> danielgjypi/FretMaster
+                </button>
+                <span 
+                    className="text-[10px] font-mono font-bold text-foreground/60 cursor-pointer hover:text-primary transition-colors select-none"
+                    onClick={registerClick}
+                >
+                    v1.1.1
+                </span>
+            </div>
+            <div className="flex gap-3">
               <button 
                 onClick={resetToDefault}
-                className="px-4 py-2 text-muted-foreground hover:text-foreground text-xs font-bold uppercase transition-colors"
+                className="px-4 py-2 text-muted-foreground hover:text-foreground text-[10px] font-bold uppercase transition-colors tracking-widest"
               >
                 Reset
               </button>
               <button 
-                onClick={exportTheme}
-                className="px-4 py-2 text-primary hover:bg-primary/10 text-xs font-bold uppercase transition-colors flex items-center gap-2"
-                title="Export as .fmtheme"
-              >
-                <Download size={14} /> .fmtheme
-              </button>
-            </div>
-            <div className="flex gap-3">
-              <button 
-                onClick={onClose}
-                className="px-6 py-2 border border-border text-foreground hover:bg-muted text-xs font-bold uppercase transition-colors"
-              >
-                Cancel
-              </button>
-              <button 
                 onClick={saveTheme}
-                className="px-6 py-2 bg-primary text-primary-foreground hover:opacity-90 text-xs font-bold uppercase flex items-center gap-2 transition-colors shadow-lg shadow-primary/20"
+                className="px-6 py-2 bg-primary text-primary-foreground hover:opacity-90 text-[10px] font-bold uppercase flex items-center gap-2 transition-colors shadow-lg shadow-primary/20 tracking-widest"
               >
                 <Save size={14} /> Save Theme
               </button>

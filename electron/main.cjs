@@ -51,7 +51,21 @@ function createWindow() {
   mainWindow.on('unmaximize', () => {
     mainWindow.webContents.send('window-maximized-status', false);
   });
+
+  // Handle all external links (including window.open from renderer)
+  mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+    if (url.startsWith('https://') || url.startsWith('http://')) {
+      require('electron').shell.openExternal(url);
+    }
+    return { action: 'deny' };
+  });
 }
+
+// Global IPCs
+ipcMain.on('window-open-external', (event, url) => {
+  const { shell } = require('electron');
+  shell.openExternal(url);
+});
 
 app.whenReady().then(() => {
   createWindow();

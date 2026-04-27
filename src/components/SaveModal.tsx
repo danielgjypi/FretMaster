@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { X, Save, Download, Copy, Trash2, Check, ExternalLink, FileText, Image as ImageIcon, Type, Music, FolderPlus, Folder, FolderOpen, MoreVertical, LayoutGrid, Github } from 'lucide-react';
+import { X, Save, Download, Copy, Trash2, Check, ExternalLink, FileText, Image as ImageIcon, Type, Music, FolderPlus, Folder, FolderOpen, MoreVertical, LayoutGrid, Github, Printer } from 'lucide-react';
 import { Chord } from '../lib/chords';
 import { cn } from '../lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
 import { exportProgressionToMidi } from '../lib/midiExport';
+import { THEMES } from '../lib/themes';
 import * as htmlToImage from 'html-to-image';
 import { jsPDF } from 'jspdf';
 import { ChordDiagram } from './ChordDiagram';
 import { useTheme } from './ThemeProvider';
+import { useEasterEgg } from './EasterEgg';
 
 interface SavedProgression {
   id: string;
@@ -29,9 +31,11 @@ interface SaveModalProps {
   onLoadProgression: (p: Chord[], name?: string) => void;
   trackName: string;
   onTrackNameChange: (name: string) => void;
+  bpm: number;
 }
 
-export function SaveModal({ isOpen, onClose, currentProgression, onLoadProgression, trackName, onTrackNameChange }: SaveModalProps) {
+export function SaveModal({ isOpen, onClose, currentProgression, onLoadProgression, trackName, onTrackNameChange, bpm }: SaveModalProps) {
+  const { registerClick } = useEasterEgg();
   const { theme } = useTheme();
   const [saved, setSaved] = useState<SavedProgression[]>([]);
   const [name, setName] = useState('');
@@ -41,15 +45,36 @@ export function SaveModal({ isOpen, onClose, currentProgression, onLoadProgressi
   const [duplicatePromptOpen, setDuplicatePromptOpen] = useState(false);
   const [pendingSaveName, setPendingSaveName] = useState('');
   const [activeTab, setActiveTab] = useState<'save' | 'export'>('save');
-  const [exportDetail, setExportDetail] = useState<'low' | 'medium' | 'high'>('medium');
-  const [exportResolution, setExportResolution] = useState<'small' | 'medium' | 'large' | 'xl'>('medium');
+  const [exportDetail, setExportDetail] = useState<'low' | 'medium' | 'high'>(() => {
+    const s = localStorage.getItem('fm_export_settings');
+    if (s) { try { return JSON.parse(s).detail || 'medium'; } catch (e) {} }
+    return 'medium';
+  });
+  const [exportResolution, setExportResolution] = useState<'small' | 'medium' | 'large' | 'xl'>(() => {
+    const s = localStorage.getItem('fm_export_settings');
+    if (s) { try { return JSON.parse(s).resolution || 'medium'; } catch (e) {} }
+    return 'medium';
+  });
   const [isGenerating, setIsGenerating] = useState(false);
   const [collections, setCollections] = useState<Collection[]>([]);
   const [activeCollectionId, setActiveCollectionId] = useState<string>('all');
   const [isCreatingCollection, setIsCreatingCollection] = useState(false);
   const [newCollectionName, setNewCollectionName] = useState('');
-  const [exportZoom, setExportZoom] = useState(1);
-  const [exportAspectRatio, setExportAspectRatio] = useState<'auto' | '1:1' | '16:9' | '9:16' | 'a4' | 'letter'>('auto');
+  const [exportZoom, setExportZoom] = useState(() => {
+    const s = localStorage.getItem('fm_export_settings');
+    if (s) { try { return JSON.parse(s).zoom || 1; } catch (e) {} }
+    return 1;
+  });
+  const [exportAspectRatio, setExportAspectRatio] = useState<'auto' | '1:1' | '16:9' | '9:16' | 'a4' | 'letter'>(() => {
+    const s = localStorage.getItem('fm_export_settings');
+    if (s) { try { return JSON.parse(s).aspectRatio || 'auto'; } catch (e) {} }
+    return 'auto';
+  });
+  const [isPrintMode, setIsPrintMode] = useState(() => {
+    const s = localStorage.getItem('fm_export_settings');
+    if (s) { try { return JSON.parse(s).isPrintMode ?? false; } catch (e) {} }
+    return false;
+  });
   const [movingTrackId, setMovingTrackId] = useState<string | null>(null);
 
   const resMultipliers = {
@@ -72,6 +97,17 @@ export function SaveModal({ isOpen, onClose, currentProgression, onLoadProgressi
       }
     }
   }, [isOpen]);
+
+  useEffect(() => {
+    const settings = {
+      detail: exportDetail,
+      resolution: exportResolution,
+      zoom: exportZoom,
+      aspectRatio: exportAspectRatio,
+      isPrintMode
+    };
+    localStorage.setItem('fm_export_settings', JSON.stringify(settings));
+  }, [exportDetail, exportResolution, exportZoom, exportAspectRatio, isPrintMode]);
 
   useEffect(() => {
     if (isOpen) {
@@ -265,9 +301,12 @@ export function SaveModal({ isOpen, onClose, currentProgression, onLoadProgressi
 
     try {
       // Use html-to-image to get a high-quality data URL
+      const exportThemeId = isPrintMode ? 'zinc-light' : (theme?.id || 'default');
+      const bgColor = isPrintMode ? '#ffffff' : (getComputedStyle(document.body).getPropertyValue('--background') || '#000000');
+
       const dataUrl = await htmlToImage.toPng(element, {
         pixelRatio: resMultipliers[exportResolution],
-        backgroundColor: getComputedStyle(document.body).getPropertyValue('--background') || '#000000',
+        backgroundColor: bgColor,
       });
 
       if (format === 'png') {
@@ -347,18 +386,18 @@ export function SaveModal({ isOpen, onClose, currentProgression, onLoadProgressi
                                     {currentProgression.map(c => `${c.root}${c.suffix}`).join(' - ')}
                                 </div>
                                 
-                                <div className="flex flex-col gap-2">
+                                <div className="flex gap-2">
                                     <input 
                                             type="text" 
                                             value={name}
                                             onChange={e => handleNameChange(e.target.value)}
                                             placeholder="Progression Name..."
-                                            className="flex-1 bg-background border border-border px-3 py-2 text-sm focus:border-primary focus:outline-none transition-colors"
+                                            className="flex-1 bg-background border border-border px-3 py-2 text-sm focus:border-primary focus:outline-none transition-colors min-w-0"
                                         />
                                         <button 
                                             onClick={saveToWebStorage}
                                             disabled={!name.trim()}
-                                            className="px-4 py-2 bg-primary text-primary-foreground font-bold text-xs uppercase hover:bg-primary/90 disabled:opacity-50 transition-colors flex items-center gap-2"
+                                            className="px-6 py-2 bg-primary text-primary-foreground font-bold text-xs uppercase hover:bg-primary/90 disabled:opacity-50 transition-colors flex items-center gap-2 whitespace-nowrap"
                                         >
                                             <Save size={14} /> Save
                                         </button>
@@ -381,7 +420,7 @@ export function SaveModal({ isOpen, onClose, currentProgression, onLoadProgressi
                                             {copied ? 'Copied' : 'Copy Text'}
                                         </button>
                                         <button
-                                            onClick={() => exportProgressionToMidi(name, currentProgression)}
+                                            onClick={() => exportProgressionToMidi(name, currentProgression, bpm)}
                                             className="col-span-2 px-4 py-3 bg-background border border-border hover:border-primary transition-colors text-xs font-bold uppercase flex items-center justify-center gap-2 group"
                                         >
                                             <Music size={14} className="text-primary" /> Export as MIDI
@@ -522,6 +561,35 @@ export function SaveModal({ isOpen, onClose, currentProgression, onLoadProgressi
                                     </button>
                                 ))}
                             </div>
+                        </div>
+
+                        <div className="pt-2">
+                             <button
+                                onClick={() => setIsPrintMode(!isPrintMode)}
+                                className={cn(
+                                    "w-full p-4 border flex items-center justify-between transition-all group",
+                                    isPrintMode 
+                                        ? "bg-primary/10 border-primary text-primary" 
+                                        : "bg-background border-border text-muted-foreground hover:border-primary/50"
+                                )}
+                             >
+                                <div className="flex items-center gap-3">
+                                    <div className={cn(
+                                        "w-10 h-6 rounded-full relative transition-colors p-1",
+                                        isPrintMode ? "bg-primary" : "bg-muted"
+                                    )}>
+                                        <div className={cn(
+                                            "w-4 h-4 rounded-full bg-white transition-transform",
+                                            isPrintMode ? "translate-x-4" : "translate-x-0"
+                                        )} />
+                                    </div>
+                                    <div className="text-left">
+                                        <div className="text-[10px] font-bold uppercase">Print Mode</div>
+                                        <div className="text-[9px] opacity-70">Force Paper White theme</div>
+                                    </div>
+                                </div>
+                                <Printer size={16} className={cn(isPrintMode ? "opacity-100" : "opacity-30 group-hover:opacity-100")} />
+                             </button>
                         </div>
 
 
@@ -743,21 +811,23 @@ export function SaveModal({ isOpen, onClose, currentProgression, onLoadProgressi
                       </div>
                     </div>
                     
-                    <div className={`flex-1 flex flex-col overflow-hidden theme-${theme?.id || 'default'} bg-background/5 border-l border-white/5`}>
+                    <div className={`flex-1 flex flex-col overflow-hidden theme-${isPrintMode ? 'zinc-light' : (theme || 'zinc')} bg-background/5 border-l border-white/5`}>
                         {/* Centered Scrollable Area */}
                         <div className="flex-1 overflow-auto custom-scrollbar p-10 flex flex-col items-center">
                             <div 
-                                className="relative shadow-[0_40px_100px_rgba(0,0,0,0.5)] border border-white/5 bg-background shrink-0 my-auto"
+                                className="relative shadow-[0_40px_100px_rgba(0,0,0,0.5)] border border-white/5 shrink-0 my-auto"
                                 style={{ 
                                     zoom: (340 / BASE_WIDTH).toFixed(3),
-                                    width: `${BASE_WIDTH}px`
+                                    width: `${BASE_WIDTH}px`,
+                                    backgroundColor: isPrintMode ? '#ffffff' : 'var(--background)',
+                                    color: isPrintMode ? '#09090b' : 'var(--foreground)'
                                 }}
                             >
                                 <PreviewContent 
                                     name={name} 
                                     chords={currentProgression} 
                                     detail={exportDetail} 
-                                    theme={theme?.id || 'default'} 
+                                    theme={isPrintMode ? 'zinc-light' : (theme || 'zinc')} 
                                     width={BASE_WIDTH}
                                     zoom={exportZoom}
                                     aspectRatio={exportAspectRatio}
@@ -838,7 +908,7 @@ export function SaveModal({ isOpen, onClose, currentProgression, onLoadProgressi
         name={name} 
         chords={currentProgression} 
         detail={exportDetail} 
-        theme={theme?.id || 'default'} 
+        theme={isPrintMode ? 'zinc-light' : (theme || 'zinc')} 
         width={BASE_WIDTH}
         zoom={exportZoom}
         aspectRatio={exportAspectRatio}
@@ -852,6 +922,7 @@ function PreviewContent({
 }: { 
     name: string, chords: Chord[], detail: 'low' | 'medium' | 'high', theme: string, width?: number, zoom?: number, aspectRatio?: 'auto' | '1:1' | '16:9' | '9:16' | 'a4' | 'letter' 
 }) {
+    const { registerClick } = useEasterEgg();
     const getRatioHeight = () => {
         switch(aspectRatio) {
             case '1:1': return width;
@@ -865,19 +936,48 @@ function PreviewContent({
 
     const targetHeight = getRatioHeight();
 
-    return (
-        <div 
-            className={cn(
-                "p-16 font-sans shadow-2xl overflow-hidden flex flex-col transition-colors", 
-                `theme-${theme} bg-background text-foreground`
-            )}
-            style={{ 
-                width: `${width}px`,
-                height: targetHeight ? `${targetHeight}px` : undefined,
-                minHeight: targetHeight ? `${targetHeight}px` : undefined,
-                maxHeight: targetHeight ? `${targetHeight}px` : undefined
-            }}
-        >
+  const themeData = THEMES.find(t => t.id === theme);
+  const colors = themeData?.colors;
+  const containerId = `preview-container-${theme}`;
+
+  return (
+    <div 
+        id={containerId}
+        className={cn(
+            "p-16 font-sans shadow-2xl overflow-hidden flex flex-col transition-colors", 
+            `theme-${theme}`
+        )}
+        style={{ 
+            width: `${width}px`,
+            height: targetHeight ? `${targetHeight}px` : undefined,
+            minHeight: targetHeight ? `${targetHeight}px` : undefined,
+            maxHeight: targetHeight ? `${targetHeight}px` : undefined,
+            backgroundColor: colors?.bg || 'var(--background)',
+            color: colors?.fg || 'var(--foreground)',
+        }}
+    >
+        <style>{`
+            #${containerId} {
+                --background: ${colors?.bg} !important;
+                --foreground: ${colors?.fg} !important;
+                --primary: ${colors?.primary} !important;
+                --primary-foreground: ${colors?.primaryFg} !important;
+                --muted: ${colors?.muted} !important;
+                --muted-foreground: ${colors?.mutedFg} !important;
+                --border: ${colors?.border} !important;
+                --card: ${colors?.card} !important;
+
+                /* Force Tailwind v4 specific color variables */
+                --color-background: ${colors?.bg} !important;
+                --color-foreground: ${colors?.fg} !important;
+                --color-primary: ${colors?.primary} !important;
+                --color-primary-foreground: ${colors?.primaryFg} !important;
+                --color-muted: ${colors?.muted} !important;
+                --color-muted-foreground: ${colors?.mutedFg} !important;
+                --color-border: ${colors?.border} !important;
+                --color-card: ${colors?.card} !important;
+            }
+        `}</style>
             <div style={{ zoom: zoom, flex: 1, display: 'flex', flexDirection: 'column', height: '100%' }}>
             <div className="border-b-4 border-primary pb-8 mb-12 flex justify-between items-end">
                 <div>
@@ -938,6 +1038,12 @@ function PreviewContent({
                 <p className="text-[10px] uppercase tracking-[0.2em] font-mono flex items-center gap-1.5">
                     <Github size={10} className="text-primary" /> danielgjypi/FretMaster
                 </p>
+                <span 
+                    className="text-[10px] font-mono font-bold text-foreground cursor-pointer hover:text-primary transition-colors select-none"
+                    onClick={registerClick}
+                >
+                    v1.1.1
+                </span>
             </div>
             </div>
         </div>

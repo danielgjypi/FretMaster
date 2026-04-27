@@ -64,12 +64,6 @@ export function MainApp() {
   const [past, setPast] = useState<Chord[][]>([]);
   const [future, setFuture] = useState<Chord[][]>([]);
 
-  useEffect(() => { localStorage.setItem('fretmaster-progression', JSON.stringify(progression)); }, [progression]);
-  useEffect(() => { localStorage.setItem('fretmaster-bpm', bpm.toString()); }, [bpm]);
-  useEffect(() => { localStorage.setItem('fretmaster-volume', volume.toString()); }, [volume]);
-  useEffect(() => { localStorage.setItem('fretmaster-instrument', instrument); }, [instrument]);
-  useEffect(() => { localStorage.setItem('fretmaster-track-name', trackName); }, [trackName]);
-
   const [autoPlayEnabled, setAutoPlayEnabled] = useState(true);
   const [showNoteNames, setShowNoteNames] = useState(true);
   const [showGlow, setShowGlow] = useState(() => {
@@ -103,47 +97,6 @@ export function MainApp() {
       setLogoClicks(newClicks);
     }
   };
-
-  // Load from local storage on mount
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem('fretmaster-progression');
-      if (saved) {
-        setProgression(JSON.parse(saved));
-      }
-      const savedBpm = localStorage.getItem('fretmaster-bpm');
-      if (savedBpm) setBpmState(parseInt(savedBpm, 10));
-      
-      const savedSpeed = localStorage.getItem('fretmaster-speed');
-      if (savedSpeed) setPlaybackSpeed(parseFloat(savedSpeed));
-      
-      const savedInstrument = localStorage.getItem('fretmaster-instrument');
-      if (savedInstrument) {
-        setInstrument(savedInstrument);
-        setSynthInstrument(savedInstrument);
-      }
-      
-      const savedVolume = localStorage.getItem('fretmaster-volume');
-      if (savedVolume) {
-        const v = parseInt(savedVolume, 10);
-        setVolumeState(v);
-        setVolume(v);
-      } else {
-        setVolume(80);
-      }
-      
-      const savedAutoPlay = localStorage.getItem('fretmaster-autoplay');
-      if (savedAutoPlay) setAutoPlayEnabled(savedAutoPlay === 'true');
-
-      const savedNotes = localStorage.getItem('fretmaster-notes');
-      if (savedNotes) setShowNoteNames(savedNotes === 'true');
-
-      const savedGlow = localStorage.getItem('fretmaster-glow');
-      if (savedGlow) setShowGlow(savedGlow === 'true');
-    } catch (e) {
-      console.error("Failed to load state", e);
-    }
-  }, []);
 
   // Save to local storage when changed
   useEffect(() => {
@@ -717,6 +670,7 @@ export function MainApp() {
         }}
         trackName={trackName}
         onTrackNameChange={setTrackName}
+        bpm={bpm}
       />
 
       {/* Theme Selection Modal */}

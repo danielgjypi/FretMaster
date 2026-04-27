@@ -1,7 +1,7 @@
 {
   "name": "fretmaster",
   "private": true,
-  "version": "1.1.0",
+  "version": "1.1.1",
   "license": "GPL-3.0-or-later",
   "description": "A premium guitar fretboard and scale explorer.",
   "author": "FretMaster Team",
@@ -23,6 +23,7 @@
     "@dnd-kit/utilities": "^3.2.2",
     "@tailwindcss/vite": "^4.1.14",
     "@vitejs/plugin-react": "^5.0.4",
+    "canvas-confetti": "^1.9.4",
     "clsx": "^2.1.1",
     "html-to-image": "^1.11.13",
     "html2canvas": "^1.4.1",
@@ -39,6 +40,7 @@
     "vite": "^6.2.0"
   },
   "devDependencies": {
+    "@types/canvas-confetti": "^1.9.0",
     "@types/node": "^22.14.0",
     "autoprefixer": "^10.4.21",
     "concurrently": "^9.2.1",

@@ -1,11 +1,12 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { X, Play, Copy, LayoutTemplate, Trash2 } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { X, Play, Copy, LayoutTemplate, Trash2, Github, Search } from 'lucide-react';
 import { Theme, CustomThemeData } from './ThemeProvider';
 import { THEMES } from '../lib/themes';
 import { CHORD_GROUPS, Chord } from '../lib/chords';
 import { cn } from '../lib/utils';
 import { ChordDiagram } from './ChordDiagram';
 import { motion, AnimatePresence } from 'motion/react';
+import { useEasterEgg } from './EasterEgg';
 
 interface ThemeModalProps {
   isOpen: boolean;
@@ -26,7 +27,9 @@ const getStableRandomChord = (id: string): Chord => {
 };
 
 export function ThemeModal({ isOpen, onClose, currentTheme, onSelectTheme }: ThemeModalProps) {
+  const { registerClick } = useEasterEgg();
   const [customThemes, setCustomThemes] = useState<CustomThemeData[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     if (isOpen) {
@@ -51,6 +54,24 @@ export function ThemeModal({ isOpen, onClose, currentTheme, onSelectTheme }: The
     }
   };
 
+  const handleOpenGithub = () => {
+    if (window.electronAPI) {
+      window.electronAPI.openExternal('https://github.com/danielgjypi/FretMaster');
+    } else {
+      window.open('https://github.com/danielgjypi/FretMaster', '_blank');
+    }
+  };
+
+  const filteredCustomThemes: CustomThemeData[] = customThemes.filter((t: CustomThemeData) => 
+    t.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+    (t.description || '').toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const filteredPresetThemes = THEMES.filter((t) => 
+    t.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+    t.id.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   return (
     <AnimatePresence>
       {isOpen && (
@@ -69,25 +90,53 @@ export function ThemeModal({ isOpen, onClose, currentTheme, onSelectTheme }: The
             className="bg-card border border-border max-w-5xl w-full h-[80vh] min-h-[600px] shadow-2xl flex flex-col overflow-hidden text-foreground"
           >
         
-        <div className="flex items-center justify-between p-6 border-b border-border">
-          <h2 className="text-xl font-serif italic text-foreground flex items-center gap-2">
-            <LayoutTemplate size={20} className="text-primary" /> Theme Gallery
-          </h2>
-          <button onClick={onClose} className="text-muted-foreground hover:text-foreground transition-colors">
-            <X size={20} />
-          </button>
+        {/* Header - Matching Standard Style */}
+        <div className="py-6 border-b border-border px-6 shrink-0 bg-muted/10 relative">
+          <div className="flex items-center justify-between gap-8">
+            <div className="shrink-0">
+              <h2 className="text-xl font-serif italic text-foreground leading-none">Theme Gallery</h2>
+              <p className="text-[9px] text-muted-foreground uppercase tracking-[0.2em] mt-2">Personalize your visual experience</p>
+            </div>
+
+            {/* Sleek Search Bar */}
+            <div className="flex-1 max-w-md relative group">
+                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-colors" />
+                <input 
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Search themes..."
+                    className="w-full bg-background/50 border border-border hover:border-primary/50 focus:border-primary px-10 py-2 text-xs focus:outline-none transition-all placeholder:text-muted-foreground/50 rounded-none"
+                />
+                {searchQuery && (
+                    <button 
+                        onClick={() => setSearchQuery('')}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                        <X size={14} />
+                    </button>
+                )}
+            </div>
+
+            <button 
+                onClick={onClose} 
+                className="text-muted-foreground hover:text-foreground transition-colors p-1 shrink-0"
+            >
+                <X size={20} />
+            </button>
+          </div>
         </div>
         
-        <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
+        <div className="flex-1 overflow-y-auto p-8 custom-scrollbar bg-background/20">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             
-            {customThemes.length > 0 && (
+            {filteredCustomThemes.length > 0 && (
               <div className="col-span-full mt-4 mb-2">
-                <h3 className="text-sm uppercase font-bold tracking-widest text-muted-foreground border-b border-border pb-2">Custom Themes</h3>
+                <h3 className="text-[10px] uppercase font-bold tracking-widest text-primary border-b border-border/50 pb-2">Custom Creations</h3>
               </div>
             )}
 
-            {customThemes.map((t) => {
+            {filteredCustomThemes.map((t) => {
               const chord = getStableRandomChord(t.id);
               return (
               <div 
@@ -97,9 +146,9 @@ export function ThemeModal({ isOpen, onClose, currentTheme, onSelectTheme }: The
                   onClose();
                 }}
                 className={cn(
-                  "theme-preview-card border cursor-pointer hover:scale-[1.02] transition-transform duration-200 flex flex-col overflow-hidden relative group/theme",
+                  "theme-preview-card border cursor-pointer hover:scale-[1.02] transition-transform duration-200 flex flex-col overflow-hidden relative group/theme rounded-none",
                   currentTheme === t.id 
-                    ? "ring-2 ring-primary border-primary shadow-[0_0_15px_var(--primary)]"
+                    ? "ring-1 ring-primary border-primary shadow-[0_0_15px_var(--primary)]"
                     : "border-border hover:border-primary/50"
                 )}
                 style={{ 
@@ -126,16 +175,16 @@ export function ThemeModal({ isOpen, onClose, currentTheme, onSelectTheme }: The
                 {/* Delete Button */}
                 <button 
                   onClick={(e) => deleteCustomTheme(e, t.id)}
-                  className="absolute top-2 right-2 p-1.5 bg-background/80 hover:bg-destructive hover:text-destructive-foreground text-muted-foreground rounded-md opacity-0 group-hover/theme:opacity-100 transition-opacity z-20"
+                  className="absolute top-2 right-2 p-1.5 bg-background/80 hover:bg-destructive hover:text-destructive-foreground text-muted-foreground rounded-none border border-border/50 opacity-0 group-hover/theme:opacity-100 transition-opacity z-20"
                 >
-                  <Trash2 size={14} />
+                  <Trash2 size={12} />
                 </button>
 
                 {/* Top preview half */}
                 <div className="flex-1 bg-background relative flex items-center justify-center border-b border-border p-4 h-full w-full">
                   
                   {/* Decorative UI elements inside the preview */}
-                  <div className="absolute top-3 left-3 text-foreground font-serif italic text-xl font-bold">
+                  <div className="absolute top-3 left-3 text-foreground font-serif italic text-xl font-bold opacity-40">
                     Aa
                   </div>
 
@@ -145,33 +194,32 @@ export function ThemeModal({ isOpen, onClose, currentTheme, onSelectTheme }: The
                   </div>
 
                   <div className="absolute bottom-3 left-3 flex gap-2">
-                    <div className="px-2 py-0.5 bg-primary text-primary-foreground text-[8px] uppercase font-bold rounded-sm">
+                    <div className="px-2 py-0.5 bg-primary text-primary-foreground text-[7px] uppercase font-bold rounded-none">
                       Active
-                    </div>
-                    <div className="px-2 py-0.5 border border-border text-foreground text-[8px] uppercase font-bold rounded-sm">
-                      Btn
                     </div>
                   </div>
                 </div>
 
                 {/* Bottom info half */}
-                <div className="h-16 bg-card px-3 flex items-center justify-between z-10 border-t border-black/10 gap-2">
+                <div className="h-16 bg-card px-4 flex items-center justify-between z-10 border-t border-black/10 gap-2">
                   <div className="flex flex-col overflow-hidden">
-                    <span className="font-bold text-foreground text-sm truncate">{t.name}</span>
-                    <span className="text-[10px] uppercase tracking-widest text-muted-foreground truncate">{t.description || "Custom Theme"}</span>
+                    <span className="font-bold text-foreground text-xs truncate">{t.name}</span>
+                    <span className="text-[9px] uppercase tracking-widest text-muted-foreground truncate opacity-70">{t.description || "Custom Theme"}</span>
                   </div>
                   {currentTheme === t.id && (
-                     <span className="text-[10px] text-primary uppercase font-bold tracking-widest bg-primary/10 px-2 py-1 rounded shrink-0">Current</span>
+                     <div className="w-1.5 h-1.5 bg-primary rotate-45 shrink-0"></div>
                   )}
                 </div>
               </div>
             )})}
 
-            <div className="col-span-full mt-4 mb-2">
-              <h3 className="text-sm uppercase font-bold tracking-widest text-muted-foreground border-b border-border pb-2">Preset Themes</h3>
-            </div>
+            {filteredPresetThemes.length > 0 && (
+              <div className="col-span-full mt-2 mb-2">
+                <h3 className="text-[10px] uppercase font-bold tracking-widest text-primary border-b border-border/50 pb-2">Factory Presets</h3>
+              </div>
+            )}
 
-            {THEMES.map((t) => {
+            {filteredPresetThemes.map((t) => {
               const chord = getStableRandomChord(t.id);
               return (
               <div 
@@ -181,10 +229,10 @@ export function ThemeModal({ isOpen, onClose, currentTheme, onSelectTheme }: The
                   onClose();
                 }}
                 className={cn(
-                  "theme-preview-card border cursor-pointer hover:scale-[1.02] transition-transform duration-200 flex flex-col overflow-hidden",
+                  "theme-preview-card border cursor-pointer hover:scale-[1.02] transition-transform duration-200 flex flex-col overflow-hidden rounded-none",
                   `theme-${t.id}`,
                   currentTheme === t.id 
-                    ? (t.isLight ? "ring-2 ring-primary border-primary" : "ring-2 ring-primary border-primary shadow-[0_0_15px_var(--primary)]") 
+                    ? (t.isLight ? "ring-1 ring-primary border-primary" : "ring-1 ring-primary border-primary shadow-[0_0_15px_var(--primary)]") 
                     : "border-border hover:border-primary/50"
                 )}
                 style={{ 
@@ -212,7 +260,7 @@ export function ThemeModal({ isOpen, onClose, currentTheme, onSelectTheme }: The
                 <div className="flex-1 bg-background relative flex items-center justify-center border-b border-border p-4 h-full w-full">
                   
                   {/* Decorative UI elements inside the preview */}
-                  <div className="absolute top-3 left-3 text-foreground font-serif italic text-xl font-bold">
+                  <div className="absolute top-3 left-3 text-foreground font-serif italic text-xl font-bold opacity-40">
                     Aa
                   </div>
 
@@ -222,28 +270,48 @@ export function ThemeModal({ isOpen, onClose, currentTheme, onSelectTheme }: The
                   </div>
 
                   <div className="absolute bottom-3 left-3 flex gap-2">
-                    <div className="px-2 py-0.5 bg-primary text-primary-foreground text-[8px] uppercase font-bold rounded-sm">
-                      Active
-                    </div>
-                    <div className="px-2 py-0.5 border border-border text-foreground text-[8px] uppercase font-bold rounded-sm">
-                      Btn
+                    <div className="px-2 py-0.5 bg-primary text-primary-foreground text-[7px] uppercase font-bold rounded-none">
+                      Studio
                     </div>
                   </div>
                 </div>
 
                 {/* Bottom info half */}
-                <div className="h-16 bg-card px-3 flex items-center justify-between z-10 border-t border-black/10 gap-2">
+                <div className="h-16 bg-card px-4 flex items-center justify-between z-10 border-t border-black/10 gap-2">
                   <div className="flex flex-col overflow-hidden">
-                    <span className="font-bold text-foreground text-sm truncate">{t.name}</span>
-                    <span className="text-[10px] uppercase tracking-widest text-muted-foreground truncate">{t.id}</span>
+                    <span className="font-bold text-foreground text-xs truncate">{t.name}</span>
+                    <span className="text-[9px] uppercase tracking-widest text-muted-foreground truncate opacity-70">{t.id}</span>
                   </div>
                   {currentTheme === t.id && (
-                     <span className="text-[10px] text-primary uppercase font-bold tracking-widest bg-primary/10 px-2 py-1 rounded shrink-0">Current</span>
+                     <div className="w-1.5 h-1.5 bg-primary rotate-45 shrink-0"></div>
                   )}
                 </div>
               </div>
             )})}
+
+            {filteredCustomThemes.length === 0 && filteredPresetThemes.length === 0 && (
+                <div className="col-span-full py-20 flex flex-col items-center justify-center text-muted-foreground opacity-50">
+                    <LayoutTemplate size={48} strokeWidth={1} className="mb-4" />
+                    <p className="text-sm font-serif italic">No themes match your search</p>
+                </div>
+            )}
           </div>
+        </div>
+
+        {/* Footer - Consistent Branding */}
+        <div className="p-6 border-t border-border flex justify-between items-center opacity-50 bg-muted/5 shrink-0">
+            <button 
+                onClick={handleOpenGithub}
+                className="text-[10px] uppercase tracking-[0.2em] font-mono flex items-center gap-1.5 hover:text-primary transition-colors group"
+            >
+                <Github size={12} className="text-primary" /> danielgjypi/FretMaster
+            </button>
+            <span 
+              className="text-[10px] font-mono font-bold text-foreground/80 cursor-pointer hover:text-primary transition-colors select-none"
+              onClick={registerClick}
+            >
+              v1.1.1
+            </span>
         </div>
         
           </motion.div>

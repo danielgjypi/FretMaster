@@ -9,12 +9,13 @@
 ## ✨ Features
 
 -   **Interactive Fretboard**: Explore scales and chords across the entire neck.
--   **High-Fidelity Sound**: Realistic guitar samples powered by a native Tone.js engine.
+-   **High-Fidelity Sound**: Realistic guitar samples powered by a native Tone.js engine, now featuring **Overdriven** and **Distortion** profiles.
 -   **Undo/Redo System**: History-aware progression editing with full keyboard shortcut support (`Ctrl+Z`, `Ctrl+Y`).
 -   **Pro Export Suite**: Export your creations as High-Res Images, PDF Documents, or redesigned Text Sheets.
 -   **Intelligent Track Naming**: Automatic synchronization between saved tracks and document export titles.
--   **Track Manager**: Organize your progressions into collections and folders for easy access.
--   **Premium UI**: Sleek, glassmorphic design with 20+ professional themes and a live document designer.
+-   **Track Manager**: Organize your progressions into collections and folders with real-time search.
+-   **Theme Search & Live Preview**: Instantly filter through 25+ professional themes and visualize custom color combinations in real-time.
+-   **Premium "Studio" UI**: Redesigned industrial-style modals and a sleek, glassmorphic interface for a distraction-free workflow.
 -   **Offline First**: All assets, fonts, and sounds are locally hosted for zero-latency usage.
 -   **Window Management**: Custom, frameless window controls for a modern desktop feel.
 

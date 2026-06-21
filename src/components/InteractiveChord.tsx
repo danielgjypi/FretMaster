@@ -38,13 +38,7 @@ export function InteractiveChord({
   
   useEffect(() => {
      if (initialChord && group) {
-         // The chord ID is typically v.id or v.id + '-' + timestamp or sugg- + v.id + '-' + timestamp
-         // Let's find exactly the matching voicing by ignoring sugg- prefix and -timestamp suffix
-         let baseId = initialChord.id;
-         if (baseId.startsWith('sugg-')) baseId = baseId.replace('sugg-', '');
-         baseId = baseId.replace(/-(\d+)$/, '');
-         
-         const idx = group.voicings.findIndex(v => baseId === v.id);
+         const idx = group.voicings.findIndex(v => JSON.stringify(v.frets) === JSON.stringify(initialChord.frets));
          if (idx !== -1) setInternalIdx(idx);
      }
   }, [initialChord, group]);

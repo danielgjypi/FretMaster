@@ -277,10 +277,7 @@ export function MainApp() {
   const updateProgressionChord = (index: number, newChord: Chord) => {
     recordHistory(progression);
     const newProgression = [...progression];
-    // Extract timestamp at the end of the id to keep key stable
-    const match = progression[index].id.match(/-(\d+)$/);
-    const timestamp = match ? match[1] : Date.now().toString();
-    newProgression[index] = { ...newChord, id: `${newChord.id}-${timestamp}` };
+    newProgression[index] = { ...newChord, id: progression[index].id };
     setProgression(newProgression);
   };
 

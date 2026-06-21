@@ -5,9 +5,9 @@ app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required');
 
 function createWindow() {
   const mainWindow = new BrowserWindow({
-    width: 1280,
+    width: 1360,
     height: 800,
-    minWidth: 1280,
+    minWidth: 1360,
     minHeight: 720,
     frame: false,
     icon: path.join(__dirname, '../public/img/fretmaster.png'),

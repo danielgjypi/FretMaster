@@ -3,6 +3,7 @@ import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { InteractiveChord } from './InteractiveChord';
 import { Chord, ChordGroupType } from '../lib/chords';
+import { motion } from 'motion/react';
 
 interface SortableChordProps {
   key?: string;
@@ -39,15 +40,18 @@ export function SortableChord({
     transform: CSS.Transform.toString(transform),
     transition,
     zIndex: isDragging ? 50 : 'auto',
-    opacity: isDragging ? 0.5 : 1,
   };
 
   return (
-    <div 
+    <motion.div 
       ref={setNodeRef} 
       style={style} 
       {...attributes} 
       {...listeners}
+      initial={{ opacity: 0, y: 20, scale: 0.9 }}
+      animate={{ opacity: isDragging ? 0.6 : 1, y: 0, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.8, filter: "blur(4px)" }}
+      transition={{ duration: 0.2 }}
       className="relative group/sortable cursor-grab active:cursor-grabbing"
     >
       <InteractiveChord 
@@ -60,6 +64,6 @@ export function SortableChord({
         onRemove={onRemove}
         onUpdateChord={onUpdateChord}
       />
-    </div>
+    </motion.div>
   );
 }

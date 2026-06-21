@@ -1,16 +1,43 @@
 import React, { useState, useEffect } from 'react';
-import { Settings2, Music, ChevronUp, ChevronDown } from 'lucide-react';
+import { Settings2, Music, ChevronUp, ChevronDown, Activity, Mic } from 'lucide-react';
+import { MetronomeIcon, TuningForkIcon } from './Icons';
+import { THEMES } from '../lib/themes';
 import { cn } from '../lib/utils';
+import { motion, AnimatePresence } from 'motion/react';
 import { NOTES, SCALES, TUNINGS, getScaleNotes, getNoteIndex, getFullNoteName } from '../lib/scales';
 import { CustomSelect } from './CustomSelect';
 import { AnimatedScrollInput } from './AnimatedScrollInput';
+import { usePitchDetector } from '../hooks/usePitchDetector';
+import { useMetronome } from '../hooks/useMetronome';
+import { StrobeTuner } from './StrobeTuner';
+import { MetronomePanel } from './MetronomePanel';
+import { VirtualKeyboard } from './VirtualKeyboard';
 
 interface ScaleMasterProps {
   currentTheme: string;
   onLogoClick?: () => void;
+  audioDeviceId?: string | null;
+  showKeyboard?: boolean;
+  keyboardLabelMode?: 'none' | 'scientific' | 'solfege';
+  strictPitchMatching?: boolean;
+  isLeftHanded?: boolean;
+  flipVertical?: boolean;
+  noiseGate?: number;
 }
 
-export function ScaleMaster({ currentTheme, onLogoClick }: ScaleMasterProps) {
+export function ScaleMaster({ 
+  currentTheme, 
+  onLogoClick, 
+  audioDeviceId, 
+  showKeyboard, 
+  keyboardLabelMode = 'scientific', 
+  strictPitchMatching = true,
+  isLeftHanded = false,
+  flipVertical = false,
+  noiseGate = 0.01
+}: ScaleMasterProps) {
+    const currentThemeData = THEMES.find(t => t.id === currentTheme);
+    const isMonochromeTheme = currentThemeData ? currentThemeData.colors.primary.toLowerCase() === currentThemeData.colors.fg.toLowerCase() : (currentTheme === 'zinc' || currentTheme === 'zinc-light');
   const [rootNote, setRootNote] = useState(() => {
     return localStorage.getItem('scalemaster-root') || 'C';
   });
@@ -27,6 +54,13 @@ export function ScaleMaster({ currentTheme, onLogoClick }: ScaleMasterProps) {
     const saved = localStorage.getItem('scalemaster-custom-tuning');
     return saved ? JSON.parse(saved) : TUNINGS.find(t => t.id === 'e_standard')?.notes || [];
   });
+
+  const [isLiveInputActive, setIsLiveInputActive] = useState(false);
+  const [isTunerExpanded, setIsTunerExpanded] = useState(false);
+  const { pitchData } = usePitchDetector(isLiveInputActive, audioDeviceId, noiseGate);
+
+  const [isMetronomeOpen, setIsMetronomeOpen] = useState(false);
+  const metronome = useMetronome();
 
   useEffect(() => {
     localStorage.setItem('scalemaster-root', rootNote);
@@ -51,6 +85,7 @@ export function ScaleMaster({ currentTheme, onLogoClick }: ScaleMasterProps) {
     const frets = [];
     for (let i = 0; i <= numFrets; i++) {
         const noteIdx = (startIdx + i) % 12;
+        const currentOctave = octave + Math.floor((startIdx + i) / 12);
         const currentNote = NOTES[noteIdx];
         const isScaleNote = scaleNotes.includes(currentNote);
         const isRoot = currentNote === rootNote;
@@ -58,12 +93,15 @@ export function ScaleMaster({ currentTheme, onLogoClick }: ScaleMasterProps) {
         frets.push({
             fret: i,
             note: currentNote,
+            noteNameWithOctave: `${currentNote}${currentOctave}`,
             isScaleNote,
             isRoot
         });
     }
     return frets;
-  }).reverse(); // standard view: highest pitch string on top
+  }).reverse();
+
+  const displayStrings = flipVertical ? [...strings].reverse() : strings;
 
   const handleCustomTuningChange = (actualIndex: number, newVal: string) => {
     if (tuningId !== 'custom') {
@@ -114,9 +152,17 @@ export function ScaleMaster({ currentTheme, onLogoClick }: ScaleMasterProps) {
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden min-h-0 bg-background text-foreground animate-in fade-in duration-500 relative z-10 w-full">
-      
       {/* Main Fretboard View */}
       <section className="flex-1 flex flex-col bg-background relative overflow-hidden z-10 w-full h-full pt-10 px-8">
+        {/* Full Screen Tuner Overlay */}
+        <AnimatePresence>
+          {isLiveInputActive && isTunerExpanded && (
+              <StrobeTuner 
+                   pitchData={pitchData} 
+                   onClose={() => setIsTunerExpanded(false)} 
+              />
+          )}
+        </AnimatePresence>
         <div className="flex items-center gap-3 mb-8">
             <h1 className="text-3xl font-serif italic text-foreground tracking-tight transition-colors">
                 {rootNote} {SCALES.find(s => s.id === scaleId)?.name}
@@ -131,10 +177,14 @@ export function ScaleMaster({ currentTheme, onLogoClick }: ScaleMasterProps) {
 
         <div className="flex-1 w-full max-w-full overflow-x-auto custom-scrollbar flex flex-col items-center justify-center pb-8 px-8">
             <div className="w-full min-w-[1000px] max-w-[1600px] h-[350px] relative mt-4">
+                
                 {/* Fretboard background */}
-                <div className="absolute inset-x-0 top-6 bottom-6 flex">
+                <div className={cn(
+                    "absolute inset-x-0 top-6 bottom-6 flex",
+                    isLeftHanded ? "flex-row-reverse" : "flex-row"
+                )}>
                    {/* Nut */}
-                   <div className="w-10 h-full shrink-0 z-10 border-r-4 border-border/80" />
+                   <div className={cn("w-10 h-full shrink-0 z-10", isLeftHanded ? "border-l-4 border-border/80" : "border-r-4 border-border/80")} />
                    <div className="w-2 shrink-0" />
                    
                    {/* Frets */}
@@ -159,53 +209,109 @@ export function ScaleMaster({ currentTheme, onLogoClick }: ScaleMasterProps) {
 
                 {/* Strings and Notes */}
                 <div className="absolute inset-0 flex flex-col justify-between py-6">
-                    {strings.map((stringInfo, sIdx) => (
-                        <div key={sIdx} className="w-full relative flex items-center group z-10">
+                    {displayStrings.map((stringInfo, sIdx) => (
+                        <div key={sIdx} className={cn("w-full relative flex items-center group z-10", isLeftHanded ? "flex-row-reverse" : "flex-row")}>
                             {/* The physical string line */}
                             <div className="absolute inset-x-0 bg-border/80 pointer-events-none shadow-sm" 
                                 style={{ height: `${1 + (sIdx * 0.4)}px`, opacity: 0.9 }} 
                             />
                             
                             {/* Nut note */}
-                            <div className="w-10 h-full flex items-center justify-center shrink-0 z-20 relative">
-                                {stringInfo[0].isScaleNote && (
-                                    <div className={cn(
-                                        "rounded-full flex items-center justify-center text-[12px] font-bold font-sans z-20 transition-colors",
-                                        stringInfo[0].isRoot ? "bg-primary w-8 h-8 text-[14px] text-primary-foreground shadow-sm" : "bg-foreground w-7 h-7 text-background shadow-sm"
-                                    )}>
-                                        {stringInfo[0].note}
-                                    </div>
-                                )}
+                            <div className="w-10 h-full flex items-center justify-center shrink-0 z-20 relative group">
+                                {(() => {
+                                    const isExactPitch = stringInfo[0].noteNameWithOctave === pitchData?.noteName;
+                                    const isNoteClassMatch = stringInfo[0].note === pitchData?.noteName?.replace(/[0-9]/g, '');
+                                    const isDetectedNote = strictPitchMatching ? isExactPitch : isNoteClassMatch;
+                                    const isDetectedClasses = isDetectedNote ? "shadow-[0_0_15px_var(--primary)] ring-2 ring-primary ring-offset-1 ring-offset-background" : "";
+                                    
+                                    return (
+                                        <>
+                                        {stringInfo[0].isScaleNote && (
+                                            <div className={cn(
+                                                "rounded-full flex items-center justify-center text-[12px] font-bold font-sans z-20 transform transition-all duration-300",
+                                                stringInfo[0].isRoot 
+                                                    ? "bg-primary w-8 h-8 text-[14px] text-primary-foreground shadow-sm" 
+                                                    : isMonochromeTheme 
+                                                        ? "bg-background border-[2px] border-foreground w-7 h-7 text-foreground shadow-sm hover:bg-foreground hover:text-background"
+                                                        : "bg-foreground w-7 h-7 text-background shadow-sm hover:opacity-80",
+                                                isDetectedClasses,
+                                                isExactPitch ? "scale-125 bg-primary text-primary-foreground" : "hover:scale-110",
+                                            )}>
+                                                <div className={cn(isLeftHanded ? "scale-x-[-1]" : "")}>
+                                                    {stringInfo[0].note}
+                                                </div>
+                                            </div>
+                                        )}
+                                        {!stringInfo[0].isScaleNote && (
+                                             <div className={cn(
+                                                "absolute w-6 h-6 rounded-full text-[10px] font-bold font-sans flex items-center justify-center pointer-events-none transition-all duration-300",
+                                                isExactPitch 
+                                                    ? "opacity-100 bg-primary/20 text-primary shadow-[0_0_15px_rgba(var(--primary),0.5)] scale-125"
+                                                    : "opacity-0 group-hover:opacity-100 bg-primary/10 text-primary"
+                                             )}>
+                                                <div className={cn(isLeftHanded ? "scale-x-[-1]" : "")}>
+                                                    {stringInfo[0].note}
+                                                </div>
+                                             </div>
+                                         )}
+                                        </>
+                                    );
+                                })()}
                             </div>
 
                             <div className="w-2 shrink-0" /> {/* Spacer for nut */}
 
                             {/* Fret notes */}
-                            {stringInfo.slice(1).map((fretInfo, fIdx) => (
+                            {stringInfo.slice(1).map((fretInfo, fIdx) => {
+                                const isExactPitch = fretInfo.noteNameWithOctave === pitchData?.noteName;
+                                const isNoteClassMatch = fretInfo.note === pitchData?.noteName?.replace(/[0-9]/g, '');
+                                const isDetectedNote = strictPitchMatching ? isExactPitch : isNoteClassMatch;
+                                const isDetectedClasses = isDetectedNote ? "shadow-[0_0_15px_var(--primary)] ring-2 ring-primary ring-offset-1 ring-offset-background" : "";
+
+                                return (
                                 <div key={fIdx} className="flex-1 flex items-center justify-center relative z-20 group">
                                      {fretInfo.isScaleNote && (
                                          <div className={cn(
-                                             "rounded-full flex items-center justify-center text-[12px] font-bold font-sans z-20 transform transition-all hover:scale-110",
-                                             fretInfo.isRoot ? "bg-primary w-8 h-8 text-[14px] text-primary-foreground shadow-sm" : "bg-foreground w-7 h-7 text-background shadow-sm hover:opacity-80",
+                                             "rounded-full flex items-center justify-center text-[12px] font-bold font-sans z-20 transform transition-all duration-300",
+                                             fretInfo.isRoot 
+                                                ? "bg-primary w-8 h-8 text-[14px] text-primary-foreground shadow-sm" 
+                                                : isMonochromeTheme
+                                                    ? "bg-background border-[2px] border-foreground w-7 h-7 text-foreground shadow-sm hover:bg-foreground hover:text-background"
+                                                    : "bg-foreground w-7 h-7 text-background shadow-sm hover:opacity-80",
+                                             isDetectedClasses,
+                                             isExactPitch ? "scale-125 bg-primary text-primary-foreground" : "hover:scale-110"
                                          )}>
-                                             {fretInfo.note}
+                                             <div className={cn(isLeftHanded ? "scale-x-[-1]" : "")}>
+                                                 {fretInfo.note}
+                                             </div>
                                          </div>
                                      )}
                                      {/* Hover helper text */}
                                      {!fretInfo.isScaleNote && (
-                                         <div className="opacity-0 group-hover:opacity-100 absolute w-6 h-6 rounded-full bg-primary/10 text-primary text-[10px] font-bold font-sans flex items-center justify-center pointer-events-none transition-opacity">
-                                             {fretInfo.note}
+                                         <div className={cn(
+                                            "absolute w-6 h-6 rounded-full text-[10px] font-bold font-sans flex items-center justify-center pointer-events-none transition-all duration-300",
+                                            isExactPitch 
+                                                ? "opacity-100 bg-primary/20 text-primary shadow-[0_0_15px_rgba(var(--primary),0.5)] scale-125"
+                                                : "opacity-0 group-hover:opacity-100 bg-primary/10 text-primary"
+                                         )}>
+                                             <div className={cn(isLeftHanded ? "scale-x-[-1]" : "")}>
+                                                 {fretInfo.note}
+                                             </div>
                                          </div>
                                      )}
                                 </div>
-                            ))}
+                                );
+                            })}
                         </div>
                     ))}
                 </div>
             </div>
             {/* Fret Numbers Below */}
-            <div className="w-full min-w-[1000px] max-w-[1600px] flex mt-4 text-[10px] font-mono text-muted-foreground font-bold">
-                 <div className="w-10 shrink-0 text-center">0</div>
+            <div className={cn(
+                "w-full min-w-[1000px] max-w-[1600px] flex mt-4 text-[10px] font-mono text-muted-foreground font-bold",
+                isLeftHanded ? "flex-row-reverse" : "flex-row"
+            )}>
+                 <div className={cn("w-10 shrink-0 text-center", isLeftHanded ? "order-last" : "")}>0</div>
                  <div className="w-2 shrink-0" />
                  {Array.from({ length: numFrets }).map((_, i) => (
                      <div key={i} className="flex-1 text-center">{i + 1}</div>
@@ -213,6 +319,8 @@ export function ScaleMaster({ currentTheme, onLogoClick }: ScaleMasterProps) {
             </div>
         </div>
       </section>
+
+
 
       {/* Bottom Panel */}
       <footer className="h-32 border-t border-border px-8 flex items-center justify-between bg-background/90 backdrop-blur-sm shrink-0 z-20 relative text-[10px] uppercase font-mono tracking-widest text-muted-foreground w-full">
@@ -253,14 +361,62 @@ export function ScaleMaster({ currentTheme, onLogoClick }: ScaleMasterProps) {
             </div>
         </div>
 
-        {/* Easter Egg Logo (placed in the middle of the available space) */}
+        {/* Center Controls (Mic, Tuner, Metronome) */}
         <div className="flex-1 flex justify-center">
-            <div 
-              className="flex space-x-2 items-center cursor-pointer select-none opacity-70 hover:opacity-100 transition-opacity"
-              onClick={onLogoClick}
-            >
-               <span className="text-primary animate-[pulse_2s_ease-in-out_infinite]">●</span>
-               <span className="font-serif italic font-bold tracking-tighter text-primary text-xl leading-none">FM.</span>
+            <div className="flex items-center p-1 bg-background gap-1">
+                <button 
+                    onClick={() => {
+                        const nextState = !isLiveInputActive;
+                        setIsLiveInputActive(nextState);
+                        if (!nextState) setIsTunerExpanded(false);
+                    }}
+                    className={cn(
+                        "w-9 h-9 flex items-center justify-center transition-all duration-300",
+                        isLiveInputActive ? "bg-primary text-primary-foreground shadow-[0_0_15px_rgba(var(--primary),0.4)]" : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                    )}
+                    title="Live Guitar Input"
+                >
+                    <Mic size={18} className={!isLiveInputActive ? "text-primary" : ""} />
+                </button>
+                <AnimatePresence>
+                  {isLiveInputActive && (
+                      <motion.button 
+                          initial={{ width: 0, opacity: 0, marginLeft: 0 }}
+                          animate={{ width: 36, opacity: 1, marginLeft: 4 }}
+                          exit={{ width: 0, opacity: 0, marginLeft: 0 }}
+                          transition={{ duration: 0.2, ease: "easeOut" }}
+                          onClick={() => setIsTunerExpanded(!isTunerExpanded)}
+                          className={cn(
+                              "h-9 flex items-center justify-center transition-colors duration-200 text-muted-foreground hover:bg-muted hover:text-foreground overflow-hidden",
+                              isTunerExpanded ? "bg-muted text-foreground" : ""
+                          )}
+                          title={isTunerExpanded ? "Close Full-Screen Tuner" : "Open Full-Screen Tuner"}
+                      >
+                          <TuningForkIcon size={18} className="shrink-0 text-primary" />
+                      </motion.button>
+                  )}
+                </AnimatePresence>
+                
+                <div className="w-px h-6 bg-border/50 mx-1" />
+                
+                <div className="relative">
+                    <button 
+                        onClick={() => setIsMetronomeOpen(!isMetronomeOpen)}
+                        className={cn(
+                            "w-9 h-9 flex items-center justify-center transition-all duration-300",
+                            isMetronomeOpen || metronome.isPlaying ? "bg-primary/20 text-primary" : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                        )}
+                        title="Metronome"
+                    >
+                        <MetronomeIcon size={18} className={!(isMetronomeOpen || metronome.isPlaying) ? "text-primary" : ""} />
+                    </button>
+                    {/* Metronome Panel positioned relative to this button */}
+                    <MetronomePanel 
+                         isOpen={isMetronomeOpen} 
+                         onClose={() => setIsMetronomeOpen(false)} 
+                         metronome={metronome} 
+                    />
+                </div>
             </div>
         </div>
 

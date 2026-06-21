@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import * as Tone from 'tone';
 import { CHORD_GROUPS, Chord, getSuggestions } from '../lib/chords';
 import { playChord, setBpm, setSynthInstrument, getCurrentInstrumentName, stopSynth, setVolume } from '../lib/synth';
-import { Undo2, Redo2, Play as PlayIcon, Trash2, Music, FastForward, Settings2, Sparkles, Save, X, Check, Search, ChevronDown, Palette, Volume2, Minus, Square } from 'lucide-react';
+import { Undo2, Redo2, Play as PlayIcon, Trash2, Music, FastForward, Settings2, Sparkles, Save, X, Check, Search, ChevronDown, Palette, Volume2, Minus, Square, Repeat, Maximize, Minimize } from 'lucide-react';
 import { useTheme, Theme } from './ThemeProvider';
 import { InteractiveChord } from './InteractiveChord';
 import { SaveModal } from './SaveModal';
@@ -11,6 +11,7 @@ import { SettingsModal, INSTRUMENT_OPTIONS } from './SettingsModal';
 import { CustomThemeModal } from './CustomThemeModal';
 import { CustomSelect } from './CustomSelect';
 import { SplashScreen } from './SplashScreen';
+import { VirtualKeyboard } from './VirtualKeyboard';
 import { AnimatedScrollInput } from './AnimatedScrollInput';
 import { ScaleMaster } from './ScaleMaster';
 import { cn } from '../lib/utils';
@@ -64,11 +65,36 @@ export function MainApp() {
   const [past, setPast] = useState<Chord[][]>([]);
   const [future, setFuture] = useState<Chord[][]>([]);
 
+  const [isLooping, setIsLooping] = useState(() => {
+    return localStorage.getItem('fretmaster-looping') === 'true';
+  });
+
   const [autoPlayEnabled, setAutoPlayEnabled] = useState(true);
   const [showNoteNames, setShowNoteNames] = useState(true);
   const [showGlow, setShowGlow] = useState(() => {
     return localStorage.getItem('fretmaster-glow') === 'true';
   });
+  const [strictPitchMatching, setStrictPitchMatching] = useState(() => {
+    return localStorage.getItem('fretmaster-strict-pitch') !== 'false';
+  });
+  const [showKeyboard, setShowKeyboard] = useState(() => {
+    return localStorage.getItem('fretmaster-keyboard') === 'true';
+  });
+  const [keyboardLabelMode, setKeyboardLabelMode] = useState<'none' | 'scientific' | 'solfege'>(() => {
+    return (localStorage.getItem('fretmaster-keyboard-label') as 'none' | 'scientific' | 'solfege') || 'scientific';
+  });
+
+  // New states
+  const [isLeftHanded, setIsLeftHanded] = useState(() => {
+    return localStorage.getItem('fretmaster-left-handed') === 'true';
+  });
+  const [flipVertical, setFlipVertical] = useState(() => {
+    return localStorage.getItem('fretmaster-flip-vertical') === 'true';
+  });
+  const [noiseGate, setNoiseGate] = useState(() => {
+    return parseFloat(localStorage.getItem('fretmaster-noise-gate') || '0.01');
+  });
+
   const playIdRef = useRef(0);
 
   const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
@@ -77,6 +103,18 @@ export function MainApp() {
   const [isCustomThemeOpen, setIsCustomThemeOpen] = useState(false);
   const [logoClicks, setLogoClicks] = useState<number[]>([]);
   const [isMaximized, setIsMaximized] = useState(false);
+  
+  const [audioDeviceId, setAudioDeviceId] = useState<string | null>(() => {
+    return localStorage.getItem('fretmaster-audio-device');
+  });
+
+  useEffect(() => {
+    if (audioDeviceId) {
+      localStorage.setItem('fretmaster-audio-device', audioDeviceId);
+    } else {
+      localStorage.removeItem('fretmaster-audio-device');
+    }
+  }, [audioDeviceId]);
 
   useEffect(() => {
     if (window.electronAPI) {
@@ -116,6 +154,30 @@ export function MainApp() {
   }, [showGlow]);
 
   useEffect(() => {
+    localStorage.setItem('fretmaster-strict-pitch', strictPitchMatching.toString());
+  }, [strictPitchMatching]);
+
+  useEffect(() => {
+    localStorage.setItem('fretmaster-keyboard', showKeyboard.toString());
+  }, [showKeyboard]);
+
+  useEffect(() => {
+    localStorage.setItem('fretmaster-keyboard-label', keyboardLabelMode);
+  }, [keyboardLabelMode]);
+
+  useEffect(() => {
+    localStorage.setItem('fretmaster-left-handed', isLeftHanded.toString());
+  }, [isLeftHanded]);
+
+  useEffect(() => {
+    localStorage.setItem('fretmaster-flip-vertical', flipVertical.toString());
+  }, [flipVertical]);
+
+  useEffect(() => {
+    localStorage.setItem('fretmaster-noise-gate', noiseGate.toString());
+  }, [noiseGate]);
+
+  useEffect(() => {
     localStorage.setItem('fretmaster-bpm', bpm.toString());
     setBpm(bpm);
   }, [bpm]);
@@ -133,6 +195,10 @@ export function MainApp() {
     localStorage.setItem('fretmaster-volume', volume.toString());
     setVolume(volume);
   }, [volume]);
+
+  useEffect(() => {
+    localStorage.setItem('fretmaster-looping', isLooping.toString());
+  }, [isLooping]);
 
   useEffect(() => {
     localStorage.setItem('fretmaster-active-tab', activeTab);
@@ -219,6 +285,23 @@ export function MainApp() {
   };
 
   const [playingIndex, setPlayingIndex] = useState<number | null>(null);
+  const [manualActiveNotes, setManualActiveNotes] = useState<string[]>([]);
+  const manualNotesTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    const handleChordPlayed = (e: any) => {
+      setManualActiveNotes(e.detail.notes);
+      if (manualNotesTimeoutRef.current) clearTimeout(manualNotesTimeoutRef.current);
+      manualNotesTimeoutRef.current = setTimeout(() => {
+        setManualActiveNotes([]);
+      }, e.detail.duration || 1500);
+    };
+    window.addEventListener('chord-played', handleChordPlayed);
+    return () => {
+      window.removeEventListener('chord-played', handleChordPlayed);
+      if (manualNotesTimeoutRef.current) clearTimeout(manualNotesTimeoutRef.current);
+    };
+  }, []);
 
   const playProgression = async () => {
     if (progression.length === 0 || isPlayingProgression) return;
@@ -240,6 +323,11 @@ export function MainApp() {
     const chordDurationMs = (beatDurationMs * 4) / playbackSpeed;
     const chordDurationSec = chordDurationMs / 1000;
     
+    // Set up loop
+    Tone.Transport.loop = isLooping;
+    Tone.Transport.loopStart = 0;
+    Tone.Transport.loopEnd = progression.length * chordDurationSec;
+    
     // Schedule all chords on the transport
     progression.forEach((chord, i) => {
       const time = i * chordDurationSec;
@@ -259,7 +347,7 @@ export function MainApp() {
     const totalDuration = progression.length * chordDurationSec;
     Tone.Transport.schedule((t) => {
       Tone.Draw.schedule(() => {
-        if (playIdRef.current === currentPlayId) {
+        if (playIdRef.current === currentPlayId && !Tone.Transport.loop) {
           setIsPlayingProgression(false);
           setPlayingIndex(null);
           Tone.Transport.stop();
@@ -269,6 +357,14 @@ export function MainApp() {
 
     // Start the transport
     Tone.Transport.start("+0.1");
+  };
+
+  const toggleLoop = () => {
+    setIsLooping(prev => {
+      const next = !prev;
+      Tone.Transport.loop = next;
+      return next;
+    });
   };
 
 
@@ -312,6 +408,7 @@ export function MainApp() {
   return (
     <>
       {showSplash && <SplashScreen onComplete={() => setShowSplash(false)} currentTheme={theme} />}
+      
       <div className="h-screen bg-background text-foreground flex flex-col font-sans overflow-hidden">
         {/* Header */}
         <header className="h-16 border-b border-border flex items-center justify-between pl-0 pr-0 bg-background z-50 shrink-0 select-none" style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}>
@@ -343,6 +440,20 @@ export function MainApp() {
           
           <div className="flex items-center space-x-2 relative" style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
           <div className="flex gap-2">
+            <button
+              onClick={() => {
+                if (activeTab === 'fretmaster') setShowKeyboard(!showKeyboard);
+              }}
+              disabled={activeTab === 'scalemaster'}
+              className={cn("flex items-center space-x-2 px-3 py-1.5 border transition-colors text-[10px] font-mono tracking-widest uppercase",
+                activeTab === 'scalemaster' ? "opacity-50 cursor-not-allowed border-border bg-background text-muted-foreground" :
+                showKeyboard ? "bg-primary/20 border-primary/50 text-primary" : "border-border bg-background hover:border-primary/50 text-muted-foreground"
+              )}
+            >
+              <Music size={14} className={activeTab === 'scalemaster' ? "text-muted-foreground" : "text-primary"} />
+              <span>Keyboard</span>
+            </button>
+
             <button
               onClick={() => setIsSettingsOpen(true)}
               className="flex items-center space-x-2 px-3 py-1.5 border border-border bg-background hover:border-primary transition-colors text-[10px] font-mono tracking-widest uppercase text-muted-foreground"
@@ -382,10 +493,10 @@ export function MainApp() {
               <X size={16} className="stroke-[1.5]" />
             </button>
           </div>
-        </div>
-      </header>
+          </div>
+        </header>
 
-      <div className="flex-1 flex overflow-hidden relative">
+        <div className="flex-1 flex overflow-hidden relative">
         <AnimatePresence mode="wait">
           {activeTab === 'fretmaster' ? (
           <motion.main 
@@ -480,6 +591,20 @@ export function MainApp() {
                 <span>Clear</span>
               </button>
 
+              <button
+                onClick={toggleLoop}
+                className={cn(
+                  "flex items-center space-x-2 px-3 py-1.5 border transition-colors text-[10px] font-mono tracking-widest uppercase",
+                  isLooping 
+                    ? "bg-primary/20 border-primary/50 text-primary" 
+                    : "border-border bg-background hover:border-primary/50 text-muted-foreground"
+                )}
+                title="Toggle Loop"
+              >
+                <Repeat size={14} className="text-primary" />
+                <span>Loop</span>
+              </button>
+
               {isPlayingProgression ? (
                 <button
                   onClick={stopProgression}
@@ -498,8 +623,7 @@ export function MainApp() {
               )}
             </div>
           </div>
-          
-          <div className="flex-1 overflow-y-auto p-8 custom-scrollbar bg-card border-x border-border/50 shadow-2xl">
+          <div className="flex-1 overflow-y-auto p-8 custom-scrollbar bg-card border-x border-border/50 shadow-[0_15px_40px_-15px_rgba(var(--primary),0.2)] relative z-10">
             {progression.length === 0 ? (
               <div className="h-full flex flex-col items-center justify-center text-muted-foreground space-y-4 opacity-70">
                 <div className="w-48 h-32 border border-dashed border-border flex items-center justify-center bg-muted/20">
@@ -530,23 +654,25 @@ export function MainApp() {
                         items={progression.map(c => c.id)}
                         strategy={horizontalListSortingStrategy}
                       >
-                        {progression.map((chord, index) => {
-                          const group = CHORD_GROUPS.find(g => g.root === chord.root && g.suffix === chord.suffix);
-                          const previousChord = index > 0 ? progression[index - 1] : undefined;
-                          return (
-                            <SortableChord 
-                              key={chord.id} 
-                              id={chord.id}
-                              index={index}
-                              chord={chord}
-                              group={group}
-                              lastChord={previousChord}
-                              isCurrentlyPlaying={playingIndex === index}
-                              onRemove={() => removeFromProgression(index)}
-                              onUpdateChord={(newChord) => updateProgressionChord(index, newChord)}
-                            />
-                          );
-                        })}
+                        <AnimatePresence mode="popLayout">
+                          {progression.map((chord, index) => {
+                            const group = CHORD_GROUPS.find(g => g.root === chord.root && g.suffix === chord.suffix);
+                            const previousChord = index > 0 ? progression[index - 1] : undefined;
+                            return (
+                              <SortableChord 
+                                key={chord.id} 
+                                id={chord.id}
+                                index={index}
+                                chord={chord}
+                                group={group}
+                                lastChord={previousChord}
+                                isCurrentlyPlaying={playingIndex === index}
+                                onRemove={() => removeFromProgression(index)}
+                                onUpdateChord={(newChord) => updateProgressionChord(index, newChord)}
+                              />
+                            );
+                          })}
+                        </AnimatePresence>
                       </SortableContext>
                     </DndContext>
                     
@@ -587,6 +713,22 @@ export function MainApp() {
                 </div>
             )}
           </div>
+          
+          <AnimatePresence>
+            {showKeyboard && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: "auto", opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                className="overflow-hidden w-full shrink-0"
+              >
+                <VirtualKeyboard 
+                  activeNotes={playingIndex !== null ? progression[playingIndex].notes : manualActiveNotes} 
+                  labelMode={keyboardLabelMode}
+                />
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           <footer className="h-12 border-t border-border px-8 flex items-center justify-between text-[10px] uppercase tracking-widest text-muted-foreground font-mono shrink-0 bg-background/90 backdrop-blur-sm z-10">
             <div className="flex space-x-6 items-center">
@@ -637,7 +779,6 @@ export function MainApp() {
               className="flex space-x-2 items-center cursor-pointer select-none"
               onClick={handleLogoClick}
             >
-               <span className="text-primary animate-[pulse_2s_ease-in-out_infinite]">●</span>
                <span className="font-serif italic font-bold tracking-tighter text-primary text-xl leading-none">FM.</span>
             </div>
           </footer>
@@ -652,7 +793,17 @@ export function MainApp() {
         transition={{ duration: 0.15, ease: "easeOut" }}
         className="flex-1 flex min-h-0 absolute inset-0 w-full h-full"
       >
-        <ScaleMaster currentTheme={theme} onLogoClick={handleLogoClick} />
+        <ScaleMaster 
+          currentTheme={theme === 'system' ? 'zinc' : theme} 
+          audioDeviceId={audioDeviceId} 
+          strictPitchMatching={strictPitchMatching}
+          isLeftHanded={isLeftHanded}
+          flipVertical={flipVertical}
+          noiseGate={noiseGate}
+          onLogoClick={handleLogoClick}
+          showKeyboard={showKeyboard}
+          keyboardLabelMode={keyboardLabelMode}
+        />
       </motion.div>
       )}
       </AnimatePresence>
@@ -693,6 +844,18 @@ export function MainApp() {
         onShowNoteNamesChange={setShowNoteNames}
         showGlow={showGlow}
         onShowGlowChange={setShowGlow}
+        strictPitchMatching={strictPitchMatching}
+        onStrictPitchMatchingChange={setStrictPitchMatching}
+        keyboardLabelMode={keyboardLabelMode}
+        onKeyboardLabelModeChange={setKeyboardLabelMode}
+        audioDeviceId={audioDeviceId}
+        onAudioDeviceChange={setAudioDeviceId}
+        isLeftHanded={isLeftHanded}
+        onLeftHandedChange={setIsLeftHanded}
+        flipVertical={flipVertical}
+        onFlipVerticalChange={setFlipVertical}
+        noiseGate={noiseGate}
+        onNoiseGateChange={setNoiseGate}
       />
 
       <CustomThemeModal

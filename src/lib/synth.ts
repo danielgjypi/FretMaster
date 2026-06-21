@@ -6,6 +6,26 @@ const instruments: Record<string, Tone.Sampler> = {};
 let instrument: Tone.Sampler | null = null;
 let initialized = false;
 
+// Master FX Chain
+const masterCompressor = new Tone.Compressor({
+  threshold: -20,
+  ratio: 4,
+  attack: 0.01,
+  release: 0.1
+}).toDestination();
+
+const masterEQ = new Tone.EQ3({
+  low: 2,
+  mid: -1,
+  high: 3,
+}).connect(masterCompressor);
+
+const masterReverb = new Tone.Freeverb({
+  roomSize: 0.65,
+  dampening: 4000,
+  wet: 0.2
+}).connect(masterEQ);
+
 export async function initSynth(instrumentName: string = 'acoustic_guitar_nylon') {
   await Tone.start();
   
@@ -34,7 +54,7 @@ export async function initSynth(instrumentName: string = 'acoustic_guitar_nylon'
           instrument = sampler;
           currentInstrumentName = instrumentName;
           initialized = true;
-          sampler.toDestination();
+          sampler.connect(masterReverb);
           resolve();
         },
         onerror: (error) => {
@@ -89,4 +109,8 @@ export async function playChord(chord: Chord, time?: number, playbackSpeedMulti:
   chord.notes.forEach((note, i) => {
     instrument!.triggerAttackRelease(note, duration, startTime + i * strumSpeed);
   });
+
+  if (time === undefined || time <= Tone.now() + 0.1) {
+    window.dispatchEvent(new CustomEvent('chord-played', { detail: { notes: chord.notes, duration: duration * 1000 } }));
+  }
 }

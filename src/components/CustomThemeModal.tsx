@@ -321,7 +321,7 @@ export function CustomThemeModal({ isOpen, onClose }: CustomThemeModalProps) {
                     className="text-[10px] font-mono font-bold text-foreground/60 cursor-pointer hover:text-primary transition-colors select-none"
                     onClick={registerClick}
                 >
-                    v1.1.1
+                    v1.2.0
                 </span>
             </div>
             <div className="flex gap-3">

@@ -62,3 +62,5 @@ desktop.ini
 .next/
 .nuxt/
 
+# Design System
+DESIGN.md

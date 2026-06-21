@@ -1042,7 +1042,7 @@ function PreviewContent({
                     className="text-[10px] font-mono font-bold text-foreground cursor-pointer hover:text-primary transition-colors select-none"
                     onClick={registerClick}
                 >
-                    v1.1.1
+                    v1.2.0
                 </span>
             </div>
             </div>

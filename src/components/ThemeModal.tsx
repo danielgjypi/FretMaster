@@ -41,8 +41,16 @@ export function ThemeModal({ isOpen, onClose, currentTheme, onSelectTheme }: The
           console.error(e);
         }
       }
+
+      // Scroll active theme into view
+      setTimeout(() => {
+        const el = document.getElementById(`theme-${currentTheme}`);
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 100);
     }
-  }, [isOpen]);
+  }, [isOpen, currentTheme]);
 
   const deleteCustomTheme = (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
@@ -141,6 +149,7 @@ export function ThemeModal({ isOpen, onClose, currentTheme, onSelectTheme }: The
               return (
               <div 
                 key={t.id}
+                id={`theme-${t.id}`}
                 onClick={() => {
                   onSelectTheme(t.id);
                   onClose();
@@ -224,6 +233,7 @@ export function ThemeModal({ isOpen, onClose, currentTheme, onSelectTheme }: The
               return (
               <div 
                 key={t.id}
+                id={`theme-${t.id}`}
                 onClick={() => {
                   onSelectTheme(t.id);
                   onClose();
@@ -310,7 +320,7 @@ export function ThemeModal({ isOpen, onClose, currentTheme, onSelectTheme }: The
               className="text-[10px] font-mono font-bold text-foreground/80 cursor-pointer hover:text-primary transition-colors select-none"
               onClick={registerClick}
             >
-              v1.1.1
+              v1.2.0
             </span>
         </div>
         

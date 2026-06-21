@@ -9,7 +9,9 @@
 ## ✨ Features
 
 -   **Interactive Fretboard**: Explore scales and chords across the entire neck.
--   **High-Fidelity Sound**: Realistic guitar samples powered by a native Tone.js engine, now featuring **Overdriven** and **Distortion** profiles.
+-   **Accessibility Layouts**: Native support for Left-Handed mode and standard TAB-style string flipping.
+-   **Intelligent Pitch Detection**: Real-time microphone tuning with an adjustable input noise gate.
+-   **High-Fidelity Sound**: Realistic guitar samples powered by a native Tone.js engine, complete with a Master FX Chain (Compressor, EQ, and Reverb).
 -   **Undo/Redo System**: History-aware progression editing with full keyboard shortcut support (`Ctrl+Z`, `Ctrl+Y`).
 -   **Pro Export Suite**: Export your creations as High-Res Images, PDF Documents, or redesigned Text Sheets.
 -   **Intelligent Track Naming**: Automatic synchronization between saved tracks and document export titles.

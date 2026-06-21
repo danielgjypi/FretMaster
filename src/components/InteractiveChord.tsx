@@ -4,6 +4,7 @@ import { ChordGroupType, Chord, getBestVoicing } from '../lib/chords';
 import { ChordDiagram } from './ChordDiagram';
 import { playChord } from '../lib/synth';
 import { cn } from '../lib/utils';
+import { motion } from 'motion/react';
 
 interface InteractiveChordProps {
   key?: React.Key;
@@ -142,11 +143,14 @@ export function InteractiveChord({
 
   // Progression View (Diagram-style with robust interactive elements)
   return (
-      <div className={cn(
-        "group relative flex flex-col items-center bg-muted/50 border border-border p-4 transition-all hover:border-primary/50 w-[180px] h-[206px] shrink-0",
-        isBest && !isCurrentlyPlaying && "border-primary/50 bg-primary/5",
-        isCurrentlyPlaying && "border-primary ring-2 ring-primary shadow-[0_0_15px_var(--primary)] bg-primary/10"
-      )}>
+      <motion.div 
+        animate={isCurrentlyPlaying ? { scale: [1, 1.05, 1], rotate: [0, -1, 1, 0] } : { scale: 1, rotate: 0 }}
+        transition={{ duration: 0.3, ease: "easeInOut" }}
+        className={cn(
+          "group relative flex flex-col items-center bg-muted/50 border border-border p-4 transition-all hover:border-primary/50 w-[180px] h-[206px] shrink-0",
+          isBest && !isCurrentlyPlaying && "border-primary/50 bg-primary/5",
+          isCurrentlyPlaying && "border-primary ring-2 ring-primary shadow-[0_0_15px_var(--primary)] bg-primary/10 z-10"
+        )}>
           {indexLabel !== undefined && (
                <span className="text-[10px] text-muted-foreground font-mono absolute top-2 left-2 z-20">{indexLabel}</span>
            )}
@@ -185,6 +189,6 @@ export function InteractiveChord({
                    <button onClick={goNext} className="p-1 text-muted-foreground hover:text-primary transition-colors bg-background border border-border rounded-sm"><ChevronRight size={16}/></button>
                ) : <div className="w-7" />}
            </div>
-      </div>
+      </motion.div>
   );
 }

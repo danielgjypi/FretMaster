@@ -21,6 +21,12 @@
 -   **Offline First**: All assets, fonts, and sounds are locally hosted for zero-latency usage.
 -   **Window Management**: Custom, frameless window controls for a modern desktop feel.
 
+## 📷 Screenshots
+
+<img width="1920" height="1152" alt="Screenshot 2026-06-21 174153" src="https://github.com/user-attachments/assets/73421978-3c9f-40e1-b094-baa54d5aae3f" />
+<img width="1920" height="1152" alt="Screenshot 2026-06-21 173941" src="https://github.com/user-attachments/assets/c880e717-86b5-4ce0-83a5-44b6abdf120d" />
+<img width="1920" height="1152" alt="Screenshot 2026-06-21 174007" src="https://github.com/user-attachments/assets/88f8c5ff-c8f2-466e-8e35-d18b72610617" />
+
 ## 🚀 Getting Started
 
 ### Prerequisites
@@ -32,8 +38,8 @@
 
 1.  **Clone the repository**:
     ```bash
-    git clone https://github.com/your-username/fretmaster.git
-    cd fretmaster
+    git clone https://github.com/danielgjypi/FretMaster.git
+    cd FretMaster
     ```
 
 2.  **Install dependencies**:
